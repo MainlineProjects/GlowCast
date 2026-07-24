@@ -6,6 +6,9 @@ const required = [
   'return "Weak";',
   'return "Strong";',
   'return "Review";',
+  "aspect < 0.07",
+  "aspect > 10",
+  "Slender but meaningful doors, sidelights, columns, and transom-like masks",
   "Auto mask confidence: {selectedAutoMaskConfidence}",
   "selectedAutoMaskConfidence = getAutoMaskConfidence(selectedZone, projectionArea)",
   "data-auto-mask-confidence-overlay",
@@ -29,4 +32,4 @@ if (missing.length) {
   throw new Error(`Automatic-mask confidence smoke failed; missing: ${missing.join(", ")}`);
 }
 
-console.log("Automatic-mask confidence, review-state, and nearby strong-candidate comparison overlay smoke passed.");
+console.log("Automatic-mask confidence smoke passed, including fairer Review classification for plausible slender architectural masks.");
