@@ -40,40 +40,36 @@ function addClosedFrame(points, x1, y1, x2, y2, strength = 220) {
 
 try {
   const { recoverSparseBridgeComponents } = await import(pathToFileURL(emittedAdapterPath).href);
-  const bounds = { x: 0, y: 0, width: 120, height: 100 };
+  const bounds = { x: 0, y: 0, width: 200, height: 120 };
   const points = [];
 
-  // Narrow, tall four-sided opening beside two conventional windows.
-  addClosedFrame(points, 5, 12, 10, 82);
-  addClosedFrame(points, 30, 27, 58, 68);
-  addClosedFrame(points, 80, 24, 114, 70);
+  // A narrow, tall, fully closed opening is intentionally below the normal 5.5%
+  // surface-width floor, while its neighboring windows are conventional sizes.
+  addClosedFrame(points, 5, 15, 14, 95);
+  addClosedFrame(points, 55, 30, 95, 78);
+  addClosedFrame(points, 130, 26, 190, 82);
 
-  // Thin clutter bridges make the three openings one connected fallback component.
-  for (let x = 11; x < 30; x += 1) points.push({ x, y: 48, strength: 220 });
-  for (let x = 59; x < 80; x += 1) points.push({ x, y: 46, strength: 220 });
+  for (let x = 15; x < 55; x += 1) points.push({ x, y: 54, strength: 220 });
+  for (let x = 96; x < 130; x += 1) points.push({ x, y: 52, strength: 220 });
 
-  const recovered = recoverSparseBridgeComponents(points, { x: 5, y: 12, width: 109, height: 70 }, bounds);
+  const recovered = recoverSparseBridgeComponents(points, { x: 5, y: 15, width: 185, height: 80 }, bounds);
   if (recovered.length !== 3) {
     throw new Error(`Expected narrow opening plus two larger openings, received ${recovered.length}.`);
   }
-  const narrow = recovered.find((candidate) => candidate.width <= 7 && candidate.height >= 60);
-  if (!narrow) {
-    throw new Error("Mixed-size recovery discarded the legitimate narrow four-sided opening.");
-  }
+  const narrow = recovered.find((candidate) => candidate.width <= 11 && candidate.height >= 70);
+  if (!narrow) throw new Error("Mixed-size recovery discarded the legitimate narrow four-sided opening.");
 
-  // A similarly narrow but open three-sided fragment must not gain the exception.
+  // An open narrow fragment of the same footprint must not gain the exception.
   const noisy = [];
-  for (let y = 12; y <= 82; y += 1) noisy.push({ x: 5, y, strength: 220 }, { x: 10, y, strength: 220 });
-  for (let x = 5; x <= 10; x += 1) noisy.push({ x, y: 82, strength: 220 });
-  addClosedFrame(noisy, 30, 27, 58, 68);
-  for (let x = 11; x < 30; x += 1) noisy.push({ x, y: 48, strength: 220 });
+  for (let y = 15; y <= 95; y += 1) noisy.push({ x: 5, y, strength: 220 }, { x: 14, y, strength: 220 });
+  for (let x = 5; x <= 14; x += 1) noisy.push({ x, y: 95, strength: 220 });
+  addClosedFrame(noisy, 55, 30, 95, 78);
+  for (let x = 15; x < 55; x += 1) noisy.push({ x, y: 54, strength: 220 });
 
-  const rejected = recoverSparseBridgeComponents(noisy, { x: 5, y: 12, width: 53, height: 70 }, bounds);
-  if (rejected.length) {
-    throw new Error("Mixed-size exception preserved an open narrow fragment that should remain rejected.");
-  }
+  const rejected = recoverSparseBridgeComponents(noisy, { x: 5, y: 15, width: 90, height: 80 }, bounds);
+  if (rejected.length) throw new Error("Mixed-size exception preserved an open narrow fragment that should remain rejected.");
 
-  console.log("Mixed-size recovery smoke passed: strongly closed narrow openings survive beside larger openings while open narrow fragments stay rejected.");
+  console.log("Mixed-size recovery smoke passed: a strongly closed narrow opening survives beside larger windows while an open narrow fragment stays rejected.");
 } finally {
   await fs.rm(tempDir, { recursive: true, force: true });
 }
