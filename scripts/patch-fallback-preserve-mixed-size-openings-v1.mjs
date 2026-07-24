@@ -3,6 +3,37 @@ import fs from "node:fs/promises";
 const adapterPath = "src/core/maskCandidateAdapter.ts";
 let source = await fs.readFile(adapterPath, "utf8");
 
+const helperMarker = "function hasStrongSlenderBoundary(";
+if (!source.includes(helperMarker)) {
+  const insertAt = source.indexOf("function recoverSparseBridgeComponents(");
+  if (insertAt < 0) throw new Error("Unable to locate sparse-bridge recovery function");
+  const helper = `function hasStrongSlenderBoundary(points: EdgePoint[], box: SimpleBox): boolean {
+  const tolerance = Math.max(1.2, Math.min(box.width, box.height) * 0.12);
+  let top = 0;
+  let bottom = 0;
+  let left = 0;
+  let right = 0;
+
+  for (const point of points) {
+    if (point.x < box.x - tolerance || point.x > box.x + box.width + tolerance) continue;
+    if (point.y < box.y - tolerance || point.y > box.y + box.height + tolerance) continue;
+    if (Math.abs(point.y - box.y) <= tolerance) top += 1;
+    if (Math.abs(point.y - (box.y + box.height)) <= tolerance) bottom += 1;
+    if (Math.abs(point.x - box.x) <= tolerance) left += 1;
+    if (Math.abs(point.x - (box.x + box.width)) <= tolerance) right += 1;
+  }
+
+  // Use the physical length of each side instead of total edge count. This prevents
+  // a tall narrow door from demanding as many hits on its short lintel/sill as on its jambs.
+  const horizontalHits = Math.max(3, Math.ceil(box.width * 0.55));
+  const verticalHits = Math.max(4, Math.ceil(box.height * 0.35));
+  return top >= horizontalHits && bottom >= horizontalHits && left >= verticalHits && right >= verticalHits;
+}
+
+`;
+  source = source.slice(0, insertAt) + helper + source.slice(insertAt);
+}
+
 const anchor = `    const recoveredBox = terminalGroup.box;
     const area = recoveredBox.width * recoveredBox.height;
     if (
@@ -25,17 +56,19 @@ const replacement = `    const recoveredBox = terminalGroup.box;
       recoveredBox.width >= Math.max(5, bounds.width * 0.055) &&
       recoveredBox.height >= Math.max(5, bounds.height * 0.055) &&
       area >= boundsArea * 0.008;
+    const slenderBoundaryClosed = hasStrongSlenderBoundary(terminalGroup.points, recoveredBox);
     const slenderArchitecturalOpening =
-      sideCoverage.sides === 4 &&
+      slenderBoundaryClosed &&
       area >= boundsArea * 0.006 &&
       (
         (widthRatio >= 0.035 && heightRatio >= 0.12 && aspect <= 0.5) ||
         (heightRatio >= 0.035 && widthRatio >= 0.12 && aspect >= 2)
       );
+    const hasGeneralClosure = sideCoverage.sides >= 3 && sideCoverage.hasHorizontal && sideCoverage.hasVertical;
 
     // Preserve a strongly closed narrow door, sidelight, transom, or similar opening
     // beside larger regions without broadly relaxing the fallback noise floor.
-    if ((!standardOpeningSize && !slenderArchitecturalOpening) || sideCoverage.sides < 3 || !sideCoverage.hasHorizontal || !sideCoverage.hasVertical) return [];
+    if ((!standardOpeningSize && !slenderArchitecturalOpening) || (!hasGeneralClosure && !slenderArchitecturalOpening)) return [];
 `;
 
 if (!source.includes(anchor)) {
@@ -43,9 +76,14 @@ if (!source.includes(anchor)) {
 }
 source = source.replace(anchor, replacement);
 
-if (!source.includes("const slenderArchitecturalOpening =") || !source.includes("sideCoverage.sides === 4") || !source.includes("widthRatio >= 0.035")) {
+if (
+  !source.includes(helperMarker) ||
+  !source.includes("const slenderBoundaryClosed =") ||
+  !source.includes("widthRatio >= 0.035") ||
+  !source.includes("horizontalHits = Math.max(3")
+) {
   throw new Error("Mixed-size architectural opening preservation was not fully applied");
 }
 
 await fs.writeFile(adapterPath, source);
-console.log("Preserved strongly closed mixed-size architectural openings during sparse-bridge recovery.");
+console.log("Preserved strongly closed mixed-size architectural openings with side-length-aware closure checks.");
