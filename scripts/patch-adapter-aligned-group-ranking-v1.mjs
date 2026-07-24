@@ -35,6 +35,12 @@ const newBlock = `const cornerScore = candidate.points.length >= 4 && candidate.
       const centerY = candidate.box.y + candidate.box.height / 2;
       const alignedNeighbor = candidates.some((other) => {
         if (other === candidate) return false;
+        const otherBoxArea = Math.max(1, other.box.width * other.box.height);
+        const otherFillRatio = Math.min(1, polygonArea(other.points) / otherBoxArea);
+        const otherAreaRatio = otherBoxArea / boundsArea;
+        const otherAspect = other.box.width / Math.max(1, other.box.height);
+        const credibleNeighbor = otherFillRatio >= 0.35 && otherAreaRatio >= 0.003 && other.points.length <= 14 && otherAspect >= 0.08 && otherAspect <= 8;
+        if (!credibleNeighbor) return false;
         const otherCenterX = other.box.x + other.box.width / 2;
         const otherCenterY = other.box.y + other.box.height / 2;
         const horizontalGap = Math.max(
@@ -49,9 +55,8 @@ const newBlock = `const cornerScore = candidate.points.length >= 4 && candidate.
         const sameColumn = Math.abs(centerX - otherCenterX) <= Math.max(bounds.width * 0.08, Math.min(candidate.box.width, other.box.width) * 0.45);
         return (sameRow && horizontalGap <= bounds.width * 0.12) || (sameColumn && verticalGap <= bounds.height * 0.12);
       });
-      // Nearby geometry can improve review order only after the candidate clears a
-      // basic self-quality floor. This prevents tiny/noisy fragments from gaining
-      // credibility merely because they happen to sit beside strong windows.
+      // Nearby geometry can improve review order only when both masks clear the
+      // same basic self-quality floor. Weak fragments cannot promote strong masks.
       const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;
       const groupScore = alignedNeighbor && credibleGroupMember ? 1 : 0;
       return fillRatio * 0.42 + sizeScore * 0.33 + aspectScore * 0.17 + cornerScore * 0.08 + groupScore * 0.06;`;
@@ -60,9 +65,9 @@ if (source.includes(previousBlock)) {
   source = source.replace(previousBlock, newBlock);
 } else if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
-} else if (!source.includes("const groupScore = alignedNeighbor && credibleGroupMember ? 1 : 0;")) {
-  throw new Error("Unable to locate architectural ranking score block for quality-gated aligned-group support");
+} else if (!source.includes("const credibleNeighbor = otherFillRatio >= 0.35 && otherAreaRatio >= 0.003")) {
+  throw new Error("Unable to locate architectural ranking score block for mutual-quality aligned-group support");
 }
 
 await fs.writeFile(path, source);
-console.log("quality-gated coherent aligned architectural groups in strongest-first mask ranking");
+console.log("mutual-quality-gated coherent aligned architectural groups in strongest-first mask ranking");
