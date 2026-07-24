@@ -1,7 +1,7 @@
-import "./patch-adapter-fair-slender-mask-ranking-v1.mjs";
-import "./patch-adapter-size-aware-mixed-mask-ranking-v1.mjs";
 import fs from "node:fs/promises";
 
+await import("./patch-adapter-fair-slender-mask-ranking-v1.mjs");
+await import("./patch-adapter-size-aware-mixed-mask-ranking-v1.mjs");
 await import("./patch-adapter-aligned-group-ranking-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
