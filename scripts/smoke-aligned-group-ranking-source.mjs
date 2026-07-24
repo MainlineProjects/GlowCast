@@ -6,7 +6,7 @@ const required = [
   "const alignedNeighbor = candidates.some((other) => {",
   "const otherBoxArea = Math.max(1, other.box.width * other.box.height);",
   "const otherFillRatio = Math.min(1, polygonArea(other.points) / otherBoxArea);",
-  "const otherAreaRatio = otherBoxArea / surfaceArea;",
+  "const otherAreaRatio = otherBoxArea / boundsArea;",
   "const otherAspect = other.box.width / Math.max(1, other.box.height);",
   "const credibleNeighbor = otherFillRatio >= 0.35 && otherAreaRatio >= 0.003 && other.points.length <= 14 && otherAspect >= 0.08 && otherAspect <= 8;",
   "if (!credibleNeighbor) return false;",
