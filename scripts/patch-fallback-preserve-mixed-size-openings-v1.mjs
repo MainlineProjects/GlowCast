@@ -66,9 +66,9 @@ const replacement = `    const recoveredBox = terminalGroup.box;
       );
     const hasGeneralClosure = sideCoverage.sides >= 3 && sideCoverage.hasHorizontal && sideCoverage.hasVertical;
 
-    // Preserve a strongly closed narrow door, sidelight, transom, or similar opening
-    // beside larger regions without broadly relaxing the fallback noise floor.
-    if ((!standardOpeningSize && !slenderArchitecturalOpening) || (!hasGeneralClosure && !slenderArchitecturalOpening)) return [];
+    // Keep valid terminals even if one sibling is too small or too open. Recovery is
+    // still accepted only when at least two architectural regions survive the full gate.
+    if ((!standardOpeningSize && !slenderArchitecturalOpening) || (!hasGeneralClosure && !slenderArchitecturalOpening)) continue;
 `;
 
 if (!source.includes(anchor)) {
@@ -76,14 +76,23 @@ if (!source.includes(anchor)) {
 }
 source = source.replace(anchor, replacement);
 
+const returnAnchor = "  return recovered.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));";
+const returnReplacement = `  if (recovered.length < 2) return [];
+  return recovered.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));`;
+if (!source.includes(returnAnchor)) {
+  throw new Error("Unable to locate recovered fallback return gate");
+}
+source = source.replace(returnAnchor, returnReplacement);
+
 if (
   !source.includes(helperMarker) ||
   !source.includes("const slenderBoundaryClosed =") ||
   !source.includes("widthRatio >= 0.035") ||
-  !source.includes("horizontalHits = Math.max(3")
+  !source.includes("horizontalHits = Math.max(3") ||
+  !source.includes("if (recovered.length < 2) return [];")
 ) {
   throw new Error("Mixed-size architectural opening preservation was not fully applied");
 }
 
 await fs.writeFile(adapterPath, source);
-console.log("Preserved strongly closed mixed-size architectural openings with side-length-aware closure checks.");
+console.log("Preserved strongly closed mixed-size architectural openings and retained valid siblings when one terminal fails validation.");
