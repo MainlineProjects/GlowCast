@@ -15,7 +15,8 @@ const required = [
   "const fillRatio = Math.min(1, polygonArea(candidate.points) / boxArea);",
   "return rankArchitecturalMasks(suppressIsolatedMaskSpecks(",
   "aspect >= 0.08 && aspect <= 8 ? 0.62 : 0.1",
-  "const groupScore = alignedNeighbor ? 1 : 0;",
+  "const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;",
+  "const groupScore = alignedNeighbor && credibleGroupMember ? 1 : 0;",
   "groupScore * 0.06"
 ];
 
@@ -25,4 +26,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, and aligned-group treatment");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, and quality-gated aligned-group treatment");
