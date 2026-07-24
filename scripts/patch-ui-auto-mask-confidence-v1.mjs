@@ -12,7 +12,9 @@ if (!source.includes("Auto mask confidence:")) {
   const aspect = zone.width / Math.max(zone.height, 0.01);
   const vertices = zone.points?.length ?? 4;
 
-  if (areaRatio < 0.008 || aspect < 0.16 || aspect > 6 || vertices > 14) return "Weak";
+  // Slender but meaningful doors, sidelights, columns, and transom-like masks should
+  // remain in Review rather than being branded Weak solely because of their aspect.
+  if (areaRatio < 0.008 || aspect < 0.07 || aspect > 10 || vertices > 14) return "Weak";
   if (areaRatio >= 0.02 && areaRatio <= 0.3 && aspect >= 0.25 && aspect <= 4.5 && vertices <= 10) return "Strong";
   return "Review";
 }
@@ -115,4 +117,4 @@ if (!source.includes("data-nearby-strong-auto-mask")) {
 }
 
 await fs.writeFile(path, source);
-console.log("Added automatic-mask confidence, review state, and nearby strong-candidate comparison overlays.");
+console.log("Added automatic-mask confidence, review state, nearby strong-candidate comparison overlays, and fairer confidence handling for slender architectural masks.");
