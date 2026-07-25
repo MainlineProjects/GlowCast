@@ -6,6 +6,7 @@ await import("./patch-adapter-aligned-group-ranking-v1.mjs");
 await import("./patch-adapter-perspective-progression-ranking-v1.mjs");
 await import("./patch-adapter-progression-outlier-guard-v1.mjs");
 await import("./patch-adapter-positional-outlier-guard-v1.mjs");
+await import("./patch-adapter-rotation-outlier-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -32,7 +33,10 @@ const required = [
   "const tightNeighborRow = neighborRowSpread <= Math.max(bounds.height * 0.025, neighborHeightMedian * 0.18);",
   "const tightNeighborColumn = neighborColumnSpread <= Math.max(bounds.width * 0.025, neighborWidthMedian * 0.18);",
   "const obviousRepeatedRowPositionOutlier = alignedNeighbors.length >= 2 && progressionScore === 0",
-  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier;",
+  "const dominantEdgeAngle = (points: Array<{ x: number; y: number }>) => {",
+  "const neighborOrientationStrength = neighborAngles.length",
+  "const obviousRepeatedRowRotationOutlier = alignedNeighbors.length >= 2 && progressionScore === 0 && neighborOrientationStrength >= 0.92 && rotationDelta > Math.PI / 13;",
+  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
 ];
@@ -43,4 +47,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, perspective grouping, progression evidence, and size/position outlier guards");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, perspective grouping, progression evidence, and size/position/rotation outlier guards");
