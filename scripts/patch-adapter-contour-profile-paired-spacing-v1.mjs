@@ -16,8 +16,9 @@ const newBlock = `const normalizedContourProfile = (candidate: MaskCandidateOutp
             y: (point.y - centerY) / halfHeight,
           }));
 
-          return Array.from({ length: 8 }, (_, index) => {
-            const angle = (Math.PI * 2 * index) / 8;
+          const contourSampleCount = 16;
+          return Array.from({ length: contourSampleCount }, (_, index) => {
+            const angle = (Math.PI * 2 * index) / contourSampleCount;
             const rayX = Math.cos(angle);
             const rayY = Math.sin(angle);
             let nearest = Number.POSITIVE_INFINITY;
@@ -58,4 +59,4 @@ if (source.includes(oldBlock)) {
 }
 
 await fs.writeFile(path, source);
-console.log("paired-mask spacing preservation now requires a coherent normalized contour profile");
+console.log("paired-mask spacing preservation now requires a coherent sixteen-ray normalized contour profile");
