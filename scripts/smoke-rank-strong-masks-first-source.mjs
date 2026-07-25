@@ -13,6 +13,7 @@ await import("./patch-adapter-single-missing-opening-progression-v1.mjs");
 await import("./patch-adapter-multiple-missing-opening-guard-v1.mjs");
 await import("./patch-adapter-perspective-multi-gap-guard-v1.mjs");
 await import("./patch-adapter-local-spacing-trend-guard-v1.mjs");
+await import("./patch-adapter-spacing-direction-break-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -69,7 +70,10 @@ const required = [
   "localTrendRatio >= 1.65 && localTrendRatio <= 2.75",
   "step <= Math.min(sequenceAxisSpan * 0.38, localOpeningSpan * 5.2)",
   "const multipleMissingOpeningBridges = alignedNeighbors.length >= 3 && missingLikeStepCount >= 2;",
-  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges;",
+  "const hasAbruptSpacingDirectionBreak = (steps: number[]) => {",
+  "const abruptSpacingDirectionBreak = alignedNeighbors.length >= 3 && hasAbruptSpacingDirectionBreak(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
+  "Math.abs(current) >= priorTurn * 1.8",
+  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
 ];
@@ -81,5 +85,6 @@ if (missing.length) {
 
 await import("./smoke-perspective-multi-gap-ranking.mjs");
 await import("./smoke-local-perspective-spacing-trend.mjs");
+await import("./smoke-spacing-direction-break-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with local perspective spacing-trend guarding and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with abrupt spacing-direction-break guarding and full-row progression protections");
