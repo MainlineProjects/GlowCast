@@ -16,6 +16,7 @@ await import("./patch-adapter-local-spacing-trend-guard-v1.mjs");
 await import("./patch-adapter-spacing-direction-break-guard-v1.mjs");
 await import("./patch-adapter-local-spacing-outlier-guard-v1.mjs");
 await import("./patch-adapter-local-narrow-spacing-outlier-guard-v1.mjs");
+await import("./patch-adapter-geometry-aware-paired-spacing-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -80,8 +81,12 @@ const required = [
   "localRatio >= 1.24 && localRatio < 1.65",
   "const localizedSpacingOutlier = alignedNeighbors.length >= 3 && hasLocalizedSpacingOutlier(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
   "const hasLocalizedNarrowSpacingOutlier = (steps: number[]) => steps.some((current, index) => {",
-  "const likelyPairedAssembly = localRatio < 0.5;",
-  "localRatio >= 0.56 && localRatio <= 0.76 && !likelyPairedAssembly",
+  "const pairLeft = orderedSequence[index];",
+  "const pairRight = orderedSequence[index + 1];",
+  "const geometryMatchedPair = widthRatio >= 0.72 && heightRatio >= 0.72 && crossAxisOverlap >= 0.82;",
+  "const likelyPairedAssembly = localRatio < 0.5 && geometryMatchedPair;",
+  "const suspiciousTightCluster = localRatio >= 0.3 && localRatio < 0.5 && !likelyPairedAssembly;",
+  "((localRatio >= 0.56 && localRatio <= 0.76) || suspiciousTightCluster)",
   "const localizedNarrowSpacingOutlier = alignedNeighbors.length >= 3 && hasLocalizedNarrowSpacingOutlier(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
   "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak || localizedSpacingOutlier || localizedNarrowSpacingOutlier;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
@@ -98,5 +103,6 @@ await import("./smoke-local-perspective-spacing-trend.mjs");
 await import("./smoke-spacing-direction-break-ranking.mjs");
 await import("./smoke-local-spacing-outlier-ranking.mjs");
 await import("./smoke-local-narrow-spacing-outlier-ranking.mjs");
+await import("./smoke-geometry-aware-paired-spacing-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with localized wide/narrow spacing-outlier guarding and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with geometry-aware paired spacing and full-row progression protections");
