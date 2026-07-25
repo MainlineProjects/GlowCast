@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 await import("./patch-adapter-fair-slender-mask-ranking-v1.mjs");
 await import("./patch-adapter-size-aware-mixed-mask-ranking-v1.mjs");
 await import("./patch-adapter-aligned-group-ranking-v1.mjs");
+await import("./patch-adapter-perspective-progression-ranking-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -22,8 +23,11 @@ const required = [
   "const rowSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.width, other.box.width) : Math.max(candidate.box.width, other.box.width);",
   "const columnSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.height, other.box.height) : Math.max(candidate.box.height, other.box.height);",
   "const consistentNeighborCount = alignedNeighbors.length;",
+  "const progressionScore = alignedNeighbors.length >= 2",
+  "const scaleConsistency = Math.abs(Math.log(Math.max(scaleOne, 0.01)) - Math.log(Math.max(scaleTwo, 0.01)));",
+  "const spacingProgresses = shrinkingForward ? gaps[1] <= gaps[0] * 1.25 + 1 : gaps[0] <= gaps[1] * 1.25 + 1;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) : 0;",
-  "groupScore * 0.06"
+  "groupScore * 0.06 + progressionScore * 0.03"
 ];
 
 const missing = required.filter((fragment) => !source.includes(fragment));
@@ -32,4 +36,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, and perspective-consistent repeated-group sizing and spacing");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, pairwise perspective grouping, and three-mask perspective progression evidence");
