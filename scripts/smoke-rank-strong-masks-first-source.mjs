@@ -14,6 +14,7 @@ await import("./patch-adapter-multiple-missing-opening-guard-v1.mjs");
 await import("./patch-adapter-perspective-multi-gap-guard-v1.mjs");
 await import("./patch-adapter-local-spacing-trend-guard-v1.mjs");
 await import("./patch-adapter-spacing-direction-break-guard-v1.mjs");
+await import("./patch-adapter-local-spacing-outlier-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -73,7 +74,11 @@ const required = [
   "const hasAbruptSpacingDirectionBreak = (steps: number[]) => {",
   "const abruptSpacingDirectionBreak = alignedNeighbors.length >= 3 && hasAbruptSpacingDirectionBreak(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
   "Math.abs(current) >= priorTurn * 1.8",
-  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak;",
+  "const hasLocalizedSpacingOutlier = (steps: number[]) => steps.some((current, index) => {",
+  "const localRatio = current / Math.max(expected, 0.01);",
+  "localRatio >= 1.24 && localRatio < 1.65",
+  "const localizedSpacingOutlier = alignedNeighbors.length >= 3 && hasLocalizedSpacingOutlier(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
+  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak || localizedSpacingOutlier;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
 ];
@@ -86,5 +91,6 @@ if (missing.length) {
 await import("./smoke-perspective-multi-gap-ranking.mjs");
 await import("./smoke-local-perspective-spacing-trend.mjs");
 await import("./smoke-spacing-direction-break-ranking.mjs");
+await import("./smoke-local-spacing-outlier-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with abrupt spacing-direction-break guarding and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with localized spacing-outlier guarding and full-row progression protections");
