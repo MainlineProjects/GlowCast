@@ -32,10 +32,11 @@ assert.ok(
   directionalTaperResidual(architecturalOpening, localizedDent) > 0.12,
   "a localized one-sided dent should not masquerade as smooth architectural taper",
 );
-assert.equal(
-  directionalTaperResidual(architecturalOpening, smoothlyTaperedOpening),
-  directionalTaperResidual(smoothlyTaperedOpening, architecturalOpening),
-  "directional taper coherence should be order-independent",
+const forwardResidual = directionalTaperResidual(architecturalOpening, smoothlyTaperedOpening);
+const reverseResidual = directionalTaperResidual(smoothlyTaperedOpening, architecturalOpening);
+assert.ok(
+  Math.abs(forwardResidual - reverseResidual) < 1e-12,
+  "directional taper coherence should be order-independent within floating-point tolerance",
 );
 
 console.log("directional taper contour coherence ranking smoke passed");
