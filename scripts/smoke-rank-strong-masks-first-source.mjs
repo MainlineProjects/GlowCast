@@ -9,6 +9,7 @@ await import("./patch-adapter-positional-outlier-guard-v1.mjs");
 await import("./patch-adapter-rotation-outlier-guard-v1.mjs");
 await import("./patch-adapter-orientation-progression-guard-v1.mjs");
 await import("./patch-adapter-long-orientation-progression-guard-v1.mjs");
+await import("./patch-adapter-single-missing-opening-progression-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -31,6 +32,11 @@ const required = [
   "const progressionScore = alignedNeighbors.length >= 2",
   "const scaleConsistency = Math.abs(Math.log(Math.max(scaleOne, 0.01)) - Math.log(Math.max(scaleTwo, 0.01)));",
   "const spacingProgresses = shrinkingForward ? gaps[1] <= gaps[0] * 1.25 + 1 : gaps[0] <= gaps[1] * 1.25 + 1;",
+  "const missingOpeningStepRatio = largerCenterStep / smallerCenterStep;",
+  "missingOpeningStepRatio >= 1.45 &&",
+  "missingOpeningStepRatio <= 2.75 &&",
+  "largerCenterStep <= Math.min(axisSpan * 0.38, openingSpanReference * 5.2);",
+  "return spacingProgresses || missingOpeningBridge ? 1 : 0;",
   "const obviousRepeatedRowOutlier = alignedNeighbors.length >= 2 && progressionScore === 0 && (sizeVsNeighbor < 0.42 || sizeVsNeighbor > 2.4);",
   "const tightNeighborRow = neighborRowSpread <= Math.max(bounds.height * 0.025, neighborHeightMedian * 0.18);",
   "const tightNeighborColumn = neighborColumnSpread <= Math.max(bounds.width * 0.025, neighborWidthMedian * 0.18);",
@@ -55,4 +61,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with full-row perspective-aware orientation progression and outlier guards");
+console.log("strongest-first automatic mask ranking source smoke passed with bounded missing-opening progression support and full-row orientation guards");
