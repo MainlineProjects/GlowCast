@@ -19,6 +19,8 @@ const required = [
   "const alignedNeighbors = candidates.filter((other) => {",
   "const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48 && Math.abs(Math.log(widthScale) - Math.log(heightScale)) <= 0.22;",
   "const dimensionallyConsistent = strictDimensionMatch || perspectiveScaleMatch;",
+  "const rowSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.width, other.box.width) : Math.max(candidate.box.width, other.box.width);",
+  "const columnSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.height, other.box.height) : Math.max(candidate.box.height, other.box.height);",
   "const consistentNeighborCount = alignedNeighbors.length;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) : 0;",
   "groupScore * 0.06"
@@ -30,4 +32,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, and perspective-consistent repeated-group treatment");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, and perspective-consistent repeated-group sizing and spacing");

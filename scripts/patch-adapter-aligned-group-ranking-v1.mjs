@@ -94,13 +94,15 @@ const newBlock = `const cornerScore = candidate.points.length >= 4 && candidate.
         const heightScale = other.box.height / Math.max(candidate.box.height, 0.01);
         const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48 && Math.abs(Math.log(widthScale) - Math.log(heightScale)) <= 0.22;
         const dimensionallyConsistent = strictDimensionMatch || perspectiveScaleMatch;
-        const rowSpacingLimit = Math.min(bounds.width * 0.12, Math.max(candidate.box.width, other.box.width) * 1.6);
-        const columnSpacingLimit = Math.min(bounds.height * 0.12, Math.max(candidate.box.height, other.box.height) * 1.6);
+        const rowSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.width, other.box.width) : Math.max(candidate.box.width, other.box.width);
+        const columnSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.height, other.box.height) : Math.max(candidate.box.height, other.box.height);
+        const rowSpacingLimit = Math.min(bounds.width * 0.12, rowSpacingReference * 1.6);
+        const columnSpacingLimit = Math.min(bounds.height * 0.12, columnSpacingReference * 1.6);
         return dimensionallyConsistent && ((sameRow && horizontalGap <= rowSpacingLimit) || (sameColumn && verticalGap <= columnSpacingLimit));
       });
       const consistentNeighborCount = alignedNeighbors.length;
-      // Repeated openings can scale together under perspective while still requiring
-      // credible geometry, aligned placement, and locally plausible spacing.
+      // Repeated openings can scale and tighten their spacing together under perspective
+      // while still requiring credible geometry, aligned placement, and local proximity.
       const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;
       const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) : 0;
       return fillRatio * 0.42 + sizeScore * 0.33 + aspectScore * 0.17 + cornerScore * 0.08 + groupScore * 0.06;`;
@@ -111,9 +113,9 @@ if (source.includes(currentBlock)) {
   source = source.replace(previousBlock, newBlock);
 } else if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
-} else if (!source.includes("const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48")) {
-  throw new Error("Unable to locate architectural ranking score block for perspective-consistent repeated-group support");
+} else if (!source.includes("const rowSpacingReference = perspectiveScaleMatch ? Math.min(candidate.box.width, other.box.width) : Math.max(candidate.box.width, other.box.width);")) {
+  throw new Error("Unable to locate architectural ranking score block for perspective-consistent repeated-group spacing support");
 }
 
 await fs.writeFile(path, source);
-console.log("repeated architectural group ranking now preserves perspective-consistent sizing");
+console.log("repeated architectural group ranking now preserves perspective-consistent sizing and spacing");
