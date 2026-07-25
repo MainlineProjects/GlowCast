@@ -19,6 +19,7 @@ await import("./patch-adapter-local-narrow-spacing-outlier-guard-v1.mjs");
 await import("./patch-adapter-geometry-aware-paired-spacing-v1.mjs");
 await import("./patch-adapter-outline-aware-paired-spacing-v1.mjs");
 await import("./patch-adapter-contour-profile-paired-spacing-v1.mjs");
+await import("./patch-adapter-perspective-contour-profile-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -88,7 +89,10 @@ const required = [
   "const outlineFillSimilarity = Math.min(pairLeftFill, pairRightFill) / Math.max(pairLeftFill, pairRightFill, 0.01);",
   "const outlineVertexSimilarity = Math.min(pairLeft.points.length, pairRight.points.length) / Math.max(pairLeft.points.length, pairRight.points.length, 1);",
   "const normalizedContourProfile = (candidate: MaskCandidateOutput) => {",
-  "const contourProfileSimilarity = pairLeftContour.reduce((sum, leftRadius, index) => {",
+  "const radialSimilarity = (leftRadius: number, rightRadius: number) => {",
+  "const directContourSimilarity = pairLeftContour.reduce((sum, leftRadius, index) => (",
+  "const perspectiveContourSimilarity = pairLeftContour.reduce((sum, leftRadius, index) => {",
+  "const contourProfileSimilarity = directContourSimilarity * 0.75 + perspectiveContourSimilarity * 0.25;",
   "const outlineShapeMatched = outlineFillSimilarity >= 0.68 && contourProfileSimilarity >= 0.82 && (outlineVertexSimilarity >= 0.5 || bothNearRectangular);",
   "const geometryMatchedPair = widthRatio >= 0.72 && heightRatio >= 0.72 && crossAxisOverlap >= 0.82 && outlineShapeMatched;",
   "const likelyPairedAssembly = localRatio < 0.5 && geometryMatchedPair;",
@@ -113,5 +117,6 @@ await import("./smoke-local-narrow-spacing-outlier-ranking.mjs");
 await import("./smoke-geometry-aware-paired-spacing-ranking.mjs");
 await import("./smoke-outline-aware-paired-spacing-ranking.mjs");
 await import("./smoke-contour-profile-paired-spacing-ranking.mjs");
+await import("./smoke-perspective-contour-profile-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with contour-profile paired spacing and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with perspective-tolerant contour-profile paired spacing and full-row progression protections");
