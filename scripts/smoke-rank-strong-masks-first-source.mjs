@@ -7,6 +7,7 @@ await import("./patch-adapter-perspective-progression-ranking-v1.mjs");
 await import("./patch-adapter-progression-outlier-guard-v1.mjs");
 await import("./patch-adapter-positional-outlier-guard-v1.mjs");
 await import("./patch-adapter-rotation-outlier-guard-v1.mjs");
+await import("./patch-adapter-orientation-progression-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -35,7 +36,10 @@ const required = [
   "const obviousRepeatedRowPositionOutlier = alignedNeighbors.length >= 2 && progressionScore === 0",
   "const dominantEdgeAngle = (points: Array<{ x: number; y: number }>) => {",
   "const neighborOrientationStrength = neighborAngles.length",
-  "const obviousRepeatedRowRotationOutlier = alignedNeighbors.length >= 2 && progressionScore === 0 && neighborOrientationStrength >= 0.92 && rotationDelta > Math.PI / 13;",
+  "const angleDistance = (left: number, right: number) => {",
+  "const orientationProgressionScore = orderedOrientationTriplet.length >= 3",
+  "const smoothTurnRate = Math.abs(firstDelta - secondDelta) <= Math.PI / 45;",
+  "const obviousRepeatedRowRotationOutlier = alignedNeighbors.length >= 2 && orientationProgressionScore === 0 && neighborOrientationStrength >= 0.92 && rotationDelta > Math.PI / 13;",
   "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
@@ -47,4 +51,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, perspective grouping, progression evidence, and size/position/rotation outlier guards");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, perspective grouping, progression evidence, and size/position/perspective-aware rotation outlier guards");
