@@ -11,6 +11,7 @@ await import("./patch-adapter-orientation-progression-guard-v1.mjs");
 await import("./patch-adapter-long-orientation-progression-guard-v1.mjs");
 await import("./patch-adapter-single-missing-opening-progression-v1.mjs");
 await import("./patch-adapter-multiple-missing-opening-guard-v1.mjs");
+await import("./patch-adapter-perspective-multi-gap-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -57,7 +58,12 @@ const required = [
   "const smoothTurnRate = turnSpread <= Math.PI / 45;",
   "const obviousRepeatedRowRotationOutlier = alignedNeighbors.length >= 2 && orientationProgressionScore === 0 && neighborOrientationStrength >= 0.92 && rotationDelta > Math.PI / 13;",
   "const sequenceMembers = [candidate, ...alignedNeighbors];",
-  "const missingLikeStepCount = smallestSequenceStep > 0",
+  "const sequenceStepEvidence = orderedSequence.slice(1).map((member, index) => {",
+  "const localOpeningSpan = Math.max(1, (previousOpeningSpan + memberOpeningSpan) / 2);",
+  "normalizedStep: step / localOpeningSpan",
+  "const smallestNormalizedSequenceStep = sequenceStepEvidence.length",
+  "const normalizedRatio = normalizedStep / smallestNormalizedSequenceStep;",
+  "step <= Math.min(sequenceAxisSpan * 0.38, localOpeningSpan * 5.2)",
   "const multipleMissingOpeningBridges = alignedNeighbors.length >= 3 && missingLikeStepCount >= 2;",
   "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
@@ -69,5 +75,6 @@ if (missing.length) {
   throw new Error(`Strongest-first mask ranking smoke failed; missing: ${missing.join(", ")}`);
 }
 
+await import("./smoke-perspective-multi-gap-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with perspective-aware missing-opening progression, multi-gap guarding, and full-row orientation guards");
+console.log("strongest-first automatic mask ranking source smoke passed with perspective-normalized multi-gap guarding and full-row progression protections");
