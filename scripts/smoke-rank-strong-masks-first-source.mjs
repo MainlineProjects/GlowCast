@@ -12,6 +12,7 @@ await import("./patch-adapter-long-orientation-progression-guard-v1.mjs");
 await import("./patch-adapter-single-missing-opening-progression-v1.mjs");
 await import("./patch-adapter-multiple-missing-opening-guard-v1.mjs");
 await import("./patch-adapter-perspective-multi-gap-guard-v1.mjs");
+await import("./patch-adapter-local-spacing-trend-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -61,8 +62,11 @@ const required = [
   "const sequenceStepEvidence = orderedSequence.slice(1).map((member, index) => {",
   "const localOpeningSpan = Math.max(1, (previousOpeningSpan + memberOpeningSpan) / 2);",
   "normalizedStep: step / localOpeningSpan",
-  "const smallestNormalizedSequenceStep = sequenceStepEvidence.length",
-  "const normalizedRatio = normalizedStep / smallestNormalizedSequenceStep;",
+  "const expectedNormalizedStepAt = (index: number) => {",
+  "return Math.sqrt(Math.max(previous, 0.01) * Math.max(next, 0.01));",
+  "const expectedNormalizedStep = expectedNormalizedStepAt(index);",
+  "const localTrendRatio = normalizedStep / Math.max(expectedNormalizedStep, 0.01);",
+  "localTrendRatio >= 1.65 && localTrendRatio <= 2.75",
   "step <= Math.min(sequenceAxisSpan * 0.38, localOpeningSpan * 5.2)",
   "const multipleMissingOpeningBridges = alignedNeighbors.length >= 3 && missingLikeStepCount >= 2;",
   "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges;",
@@ -76,5 +80,6 @@ if (missing.length) {
 }
 
 await import("./smoke-perspective-multi-gap-ranking.mjs");
+await import("./smoke-local-perspective-spacing-trend.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with perspective-normalized multi-gap guarding and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with local perspective spacing-trend guarding and full-row progression protections");
