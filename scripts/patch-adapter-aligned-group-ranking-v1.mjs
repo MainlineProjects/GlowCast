@@ -89,14 +89,18 @@ const newBlock = `const cornerScore = candidate.points.length >= 4 && candidate.
         const sameColumn = Math.abs(centerX - otherCenterX) <= Math.max(bounds.width * 0.08, Math.min(candidate.box.width, other.box.width) * 0.45);
         const widthRatio = Math.min(candidate.box.width, other.box.width) / Math.max(candidate.box.width, other.box.width, 0.01);
         const heightRatio = Math.min(candidate.box.height, other.box.height) / Math.max(candidate.box.height, other.box.height, 0.01);
-        const dimensionallyConsistent = widthRatio >= 0.62 && heightRatio >= 0.62;
+        const strictDimensionMatch = widthRatio >= 0.62 && heightRatio >= 0.62;
+        const widthScale = other.box.width / Math.max(candidate.box.width, 0.01);
+        const heightScale = other.box.height / Math.max(candidate.box.height, 0.01);
+        const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48 && Math.abs(Math.log(widthScale) - Math.log(heightScale)) <= 0.22;
+        const dimensionallyConsistent = strictDimensionMatch || perspectiveScaleMatch;
         const rowSpacingLimit = Math.min(bounds.width * 0.12, Math.max(candidate.box.width, other.box.width) * 1.6);
         const columnSpacingLimit = Math.min(bounds.height * 0.12, Math.max(candidate.box.height, other.box.height) * 1.6);
         return dimensionallyConsistent && ((sameRow && horizontalGap <= rowSpacingLimit) || (sameColumn && verticalGap <= columnSpacingLimit));
       });
       const consistentNeighborCount = alignedNeighbors.length;
-      // Repeated openings earn the strongest coherence lift only when neighboring
-      // candidates are credible, similarly sized, aligned, and locally spaced.
+      // Repeated openings can scale together under perspective while still requiring
+      // credible geometry, aligned placement, and locally plausible spacing.
       const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;
       const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) : 0;
       return fillRatio * 0.42 + sizeScore * 0.33 + aspectScore * 0.17 + cornerScore * 0.08 + groupScore * 0.06;`;
@@ -107,9 +111,9 @@ if (source.includes(currentBlock)) {
   source = source.replace(previousBlock, newBlock);
 } else if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
-} else if (!source.includes("const alignedNeighbors = candidates.filter((other) => {")) {
-  throw new Error("Unable to locate architectural ranking score block for consistent repeated-group support");
+} else if (!source.includes("const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48")) {
+  throw new Error("Unable to locate architectural ranking score block for perspective-consistent repeated-group support");
 }
 
 await fs.writeFile(path, source);
-console.log("repeated architectural group ranking now requires consistent dimensions and local spacing");
+console.log("repeated architectural group ranking now preserves perspective-consistent sizing");
