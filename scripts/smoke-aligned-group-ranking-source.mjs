@@ -12,7 +12,11 @@ const required = [
   "if (!credibleNeighbor) return false;",
   "const widthRatio = Math.min(candidate.box.width, other.box.width) / Math.max(candidate.box.width, other.box.width, 0.01);",
   "const heightRatio = Math.min(candidate.box.height, other.box.height) / Math.max(candidate.box.height, other.box.height, 0.01);",
-  "const dimensionallyConsistent = widthRatio >= 0.62 && heightRatio >= 0.62;",
+  "const strictDimensionMatch = widthRatio >= 0.62 && heightRatio >= 0.62;",
+  "const widthScale = other.box.width / Math.max(candidate.box.width, 0.01);",
+  "const heightScale = other.box.height / Math.max(candidate.box.height, 0.01);",
+  "const perspectiveScaleMatch = widthRatio >= 0.48 && heightRatio >= 0.48 && Math.abs(Math.log(widthScale) - Math.log(heightScale)) <= 0.22;",
+  "const dimensionallyConsistent = strictDimensionMatch || perspectiveScaleMatch;",
   "const rowSpacingLimit = Math.min(bounds.width * 0.12, Math.max(candidate.box.width, other.box.width) * 1.6);",
   "const columnSpacingLimit = Math.min(bounds.height * 0.12, Math.max(candidate.box.height, other.box.height) * 1.6);",
   "return dimensionallyConsistent && ((sameRow && horizontalGap <= rowSpacingLimit) || (sameColumn && verticalGap <= columnSpacingLimit));",
@@ -20,7 +24,7 @@ const required = [
   "const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;",
   "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) : 0;",
   "groupScore * 0.06",
-  "similarly sized, aligned, and locally spaced"
+  "scale together under perspective"
 ];
 
 const missing = required.filter((fragment) => !source.includes(fragment));
@@ -28,4 +32,4 @@ if (missing.length) {
   throw new Error(`Aligned architectural group ranking smoke failed; missing: ${missing.join(", ")}`);
 }
 
-console.log("dimension-and-spacing-consistent architectural group ranking source smoke passed");
+console.log("perspective-consistent architectural group ranking source smoke passed");
