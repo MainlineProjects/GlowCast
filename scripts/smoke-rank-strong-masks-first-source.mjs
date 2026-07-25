@@ -17,6 +17,7 @@ await import("./patch-adapter-spacing-direction-break-guard-v1.mjs");
 await import("./patch-adapter-local-spacing-outlier-guard-v1.mjs");
 await import("./patch-adapter-local-narrow-spacing-outlier-guard-v1.mjs");
 await import("./patch-adapter-geometry-aware-paired-spacing-v1.mjs");
+await import("./patch-adapter-outline-aware-paired-spacing-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -83,7 +84,10 @@ const required = [
   "const hasLocalizedNarrowSpacingOutlier = (steps: number[]) => steps.some((current, index) => {",
   "const pairLeft = orderedSequence[index];",
   "const pairRight = orderedSequence[index + 1];",
-  "const geometryMatchedPair = widthRatio >= 0.72 && heightRatio >= 0.72 && crossAxisOverlap >= 0.82;",
+  "const outlineFillSimilarity = Math.min(pairLeftFill, pairRightFill) / Math.max(pairLeftFill, pairRightFill, 0.01);",
+  "const outlineVertexSimilarity = Math.min(pairLeft.points.length, pairRight.points.length) / Math.max(pairLeft.points.length, pairRight.points.length, 1);",
+  "const outlineShapeMatched = outlineFillSimilarity >= 0.68 && (outlineVertexSimilarity >= 0.5 || bothNearRectangular);",
+  "const geometryMatchedPair = widthRatio >= 0.72 && heightRatio >= 0.72 && crossAxisOverlap >= 0.82 && outlineShapeMatched;",
   "const likelyPairedAssembly = localRatio < 0.5 && geometryMatchedPair;",
   "const suspiciousTightCluster = localRatio >= 0.3 && localRatio < 0.5 && !likelyPairedAssembly;",
   "((localRatio >= 0.56 && localRatio <= 0.76) || suspiciousTightCluster)",
@@ -104,5 +108,6 @@ await import("./smoke-spacing-direction-break-ranking.mjs");
 await import("./smoke-local-spacing-outlier-ranking.mjs");
 await import("./smoke-local-narrow-spacing-outlier-ranking.mjs");
 await import("./smoke-geometry-aware-paired-spacing-ranking.mjs");
+await import("./smoke-outline-aware-paired-spacing-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with geometry-aware paired spacing and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with outline-aware paired spacing and full-row progression protections");
