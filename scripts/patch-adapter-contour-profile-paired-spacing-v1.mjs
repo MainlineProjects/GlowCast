@@ -54,9 +54,10 @@ const newBlock = `const normalizedContourProfile = (candidate: MaskCandidateOutp
 
 if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
-} else if (!source.includes("const contourProfileSimilarity = pairLeftContour.reduce")) {
-  throw new Error("Unable to locate outline-aware paired-mask guard for contour-profile patch");
+} else if (!source.includes("const contourSampleCount = 16;")) {
+  throw new Error("Unable to locate outline-aware paired-mask guard for sixteen-ray contour-profile patch");
 }
 
 await fs.writeFile(path, source);
+await import("./smoke-high-resolution-contour-profile-ranking.mjs");
 console.log("paired-mask spacing preservation now requires a coherent sixteen-ray normalized contour profile");
