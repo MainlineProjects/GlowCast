@@ -21,6 +21,7 @@ await import("./patch-adapter-outline-aware-paired-spacing-v1.mjs");
 await import("./patch-adapter-contour-profile-paired-spacing-v1.mjs");
 await import("./patch-adapter-perspective-contour-profile-v1.mjs");
 await import("./patch-adapter-bidirectional-perspective-contour-profile-v1.mjs");
+await import("./patch-adapter-directional-taper-contour-coherence-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -97,7 +98,12 @@ const required = [
   "const rightToLeftPerspectiveSimilarity = adjacentContourSimilarity(pairRightContour, pairLeftContour);",
   "const perspectiveContourSimilarity = Math.min(leftToRightPerspectiveSimilarity, rightToLeftPerspectiveSimilarity);",
   "const contourProfileSimilarity = directContourSimilarity * 0.75 + perspectiveContourSimilarity * 0.25;",
-  "const outlineShapeMatched = outlineFillSimilarity >= 0.68 && contourProfileSimilarity >= 0.82 && (outlineVertexSimilarity >= 0.5 || bothNearRectangular);",
+  "const contourRatioProfile = pairLeftContour.map((leftRadius, index) => {",
+  "const directionalCos = contourRatioProfile.reduce((sum, value, index) => (",
+  "const directionalSin = contourRatioProfile.reduce((sum, value, index) => (",
+  "const directionalTaperResidual = Math.sqrt(contourRatioProfile.reduce((sum, value, index) => {",
+  "const directionalTaperCoherent = directionalTaperResidual <= 0.12;",
+  "const outlineShapeMatched = outlineFillSimilarity >= 0.68 && contourProfileSimilarity >= 0.82 && directionalTaperCoherent && (outlineVertexSimilarity >= 0.5 || bothNearRectangular);",
   "const geometryMatchedPair = widthRatio >= 0.72 && heightRatio >= 0.72 && crossAxisOverlap >= 0.82 && outlineShapeMatched;",
   "const likelyPairedAssembly = localRatio < 0.5 && geometryMatchedPair;",
   "const suspiciousTightCluster = localRatio >= 0.3 && localRatio < 0.5 && !likelyPairedAssembly;",
@@ -123,5 +129,6 @@ await import("./smoke-outline-aware-paired-spacing-ranking.mjs");
 await import("./smoke-contour-profile-paired-spacing-ranking.mjs");
 await import("./smoke-perspective-contour-profile-ranking.mjs");
 await import("./smoke-bidirectional-perspective-contour-profile-ranking.mjs");
+await import("./smoke-directional-taper-contour-coherence-ranking.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with bidirectional perspective-tolerant contour-profile paired spacing and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with bidirectional perspective contour matching, smooth directional taper coherence, and full-row progression protections");
