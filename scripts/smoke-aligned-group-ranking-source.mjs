@@ -24,7 +24,8 @@ const required = [
   "return dimensionallyConsistent && ((sameRow && horizontalGap <= rowSpacingLimit) || (sameColumn && verticalGap <= columnSpacingLimit));",
   "const consistentNeighborCount = alignedNeighbors.length;",
   "const credibleGroupMember = fillRatio >= 0.35 && areaRatio >= 0.003 && candidate.points.length <= 14 && aspect >= 0.08 && aspect <= 8;",
-  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (obviousRepeatedRowOutlier ? 0.35 : 1) : 0;",
+  "const obviousRepeatedRowPositionOutlier = alignedNeighbors.length >= 2 && progressionScore === 0",
+  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06",
   "scale and tighten their spacing together under perspective"
 ];
@@ -34,4 +35,4 @@ if (missing.length) {
   throw new Error(`Aligned architectural group ranking smoke failed; missing: ${missing.join(", ")}`);
 }
 
-console.log("perspective-consistent architectural group sizing and spacing source smoke passed with repeated-row outlier guarding");
+console.log("perspective-consistent architectural group sizing and spacing source smoke passed with size and positional outlier guarding");

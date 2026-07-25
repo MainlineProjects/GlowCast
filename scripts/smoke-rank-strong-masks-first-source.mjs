@@ -5,6 +5,7 @@ await import("./patch-adapter-size-aware-mixed-mask-ranking-v1.mjs");
 await import("./patch-adapter-aligned-group-ranking-v1.mjs");
 await import("./patch-adapter-perspective-progression-ranking-v1.mjs");
 await import("./patch-adapter-progression-outlier-guard-v1.mjs");
+await import("./patch-adapter-positional-outlier-guard-v1.mjs");
 
 const source = await fs.readFile("src/core/maskCandidateAdapter.ts", "utf8");
 
@@ -28,7 +29,11 @@ const required = [
   "const scaleConsistency = Math.abs(Math.log(Math.max(scaleOne, 0.01)) - Math.log(Math.max(scaleTwo, 0.01)));",
   "const spacingProgresses = shrinkingForward ? gaps[1] <= gaps[0] * 1.25 + 1 : gaps[0] <= gaps[1] * 1.25 + 1;",
   "const obviousRepeatedRowOutlier = alignedNeighbors.length >= 2 && progressionScore === 0 && (sizeVsNeighbor < 0.42 || sizeVsNeighbor > 2.4);",
-  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (obviousRepeatedRowOutlier ? 0.35 : 1) : 0;",
+  "const tightNeighborRow = neighborRowSpread <= Math.max(bounds.height * 0.025, neighborHeightMedian * 0.18);",
+  "const tightNeighborColumn = neighborColumnSpread <= Math.max(bounds.width * 0.025, neighborWidthMedian * 0.18);",
+  "const obviousRepeatedRowPositionOutlier = alignedNeighbors.length >= 2 && progressionScore === 0",
+  "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier;",
+  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
 ];
 
@@ -38,4 +43,4 @@ if (missing.length) {
 }
 
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, pairwise perspective grouping, three-mask perspective progression evidence, and repeated-row outlier guarding");
+console.log("strongest-first automatic mask ranking source smoke passed with fair slender-mask, mixed-size, perspective grouping, progression evidence, and size/position outlier guards");
