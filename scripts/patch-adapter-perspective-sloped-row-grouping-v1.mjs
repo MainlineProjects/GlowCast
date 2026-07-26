@@ -47,4 +47,5 @@ if (source.includes(oldRowLike) && source.includes(oldColumnLike)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-perspective-sloped-row-grouping.mjs");
-console.log("repeated-opening progression now preserves bounded perspective-sloped rows and columns while rejecting off-line fragments");
+await import("./patch-adapter-full-row-perspective-line-fit-v1.mjs");
+console.log("repeated-opening progression now preserves bounded perspective-sloped rows and columns while validating the full repeated row against the perspective line");
