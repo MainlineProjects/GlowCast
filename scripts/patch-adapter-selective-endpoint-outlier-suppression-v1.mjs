@@ -67,4 +67,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-selective-endpoint-outlier-suppression.mjs");
-console.log("repeated-opening ranking now selectively suppresses a displaced endpoint when four coherent neighbors support robust local extrapolation");
+await import("./patch-adapter-curvature-aware-endpoint-outlier-suppression-v1.mjs");
+console.log("repeated-opening ranking now selectively suppresses displaced endpoints using bounded straight or curved local extrapolation");
