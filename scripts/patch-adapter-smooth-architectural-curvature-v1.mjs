@@ -23,7 +23,7 @@ const newBlock = `const directionalSin = contourRatioProfile.reduce((sum, value,
           sum + (value - contourRatioMean) * Math.sin((Math.PI * 4 * index) / contourRatioProfile.length)
         ), 0) * 2 / contourRatioProfile.length;
         const smoothCurvatureStrength = Math.hypot(curvatureCos, curvatureSin);
-        const curvatureAdjustedResidual = Math.sqrt(contourRatioProfile.reduce((sum, value, index) => {
+        const directionalTaperResidual = Math.sqrt(contourRatioProfile.reduce((sum, value, index) => {
           const angle = (Math.PI * 2 * index) / contourRatioProfile.length;
           const expected = contourRatioMean
             + directionalCos * Math.cos(angle)
@@ -31,10 +31,8 @@ const newBlock = `const directionalSin = contourRatioProfile.reduce((sum, value,
             + curvatureCos * Math.cos(angle * 2)
             + curvatureSin * Math.sin(angle * 2);
           return sum + (value - expected) ** 2;
-        }, 0) / contourRatioProfile.length);
-        const directionalTaperResidual = smoothCurvatureStrength <= 0.22
-          ? curvatureAdjustedResidual
-          : Number.POSITIVE_INFINITY;
+        }, 0) / contourRatioProfile.length)
+          + (smoothCurvatureStrength <= 0.22 ? 0 : 1);
         const directionalTaperCoherent = directionalTaperResidual <= 0.12;`;
 
 if (source.includes(oldBlock)) {
