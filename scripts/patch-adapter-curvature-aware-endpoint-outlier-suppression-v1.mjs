@@ -46,4 +46,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-curvature-aware-endpoint-outlier-suppression.mjs");
-console.log("endpoint outlier suppression now follows bounded coherent curvature while still isolating displaced final openings");
+await import("./patch-adapter-robust-endpoint-neighbor-consensus-v1.mjs");
+console.log("endpoint outlier suppression now follows bounded coherent curvature using robust local neighbor consensus while still isolating displaced final openings");
