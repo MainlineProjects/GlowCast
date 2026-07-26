@@ -110,7 +110,10 @@ const required = [
   "((localRatio >= 0.56 && localRatio <= 0.76) || suspiciousTightCluster)",
   "const localizedNarrowSpacingOutlier = alignedNeighbors.length >= 3 && hasLocalizedNarrowSpacingOutlier(sequenceStepEvidence.map(({ normalizedStep }) => normalizedStep));",
   "const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak || localizedSpacingOutlier || localizedNarrowSpacingOutlier;",
-  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;",
+  "const isCandidateInteriorGeometricOutlier = (axis: \"row\" | \"column\") => {",
+  "const candidateGeometricOutlier = repeatedRowOutlier",
+  "const groupOutlierMultiplier = candidateGeometricOutlier ? 0.35 : repeatedRowOutlier ? 0.78 : 1;",
+  "const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * groupOutlierMultiplier : 0;",
   "groupScore * 0.06 + progressionScore * 0.03"
 ];
 
@@ -130,5 +133,6 @@ await import("./smoke-contour-profile-paired-spacing-ranking.mjs");
 await import("./smoke-perspective-contour-profile-ranking.mjs");
 await import("./smoke-bidirectional-perspective-contour-profile-ranking.mjs");
 await import("./smoke-directional-taper-contour-coherence-ranking.mjs");
+await import("./smoke-selective-curved-outlier-suppression.mjs");
 await import("./smoke-aligned-group-ranking-source.mjs");
-console.log("strongest-first automatic mask ranking source smoke passed with bidirectional perspective contour matching, smooth directional taper coherence, and full-row progression protections");
+console.log("strongest-first automatic mask ranking source smoke passed with selective geometric outlier suppression that preserves surrounding repeated-opening confidence");
