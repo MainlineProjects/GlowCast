@@ -25,7 +25,23 @@ const oldBlock = `const localNeighbors = beforeRow ? orderedNeighbors.slice(0, 4
         const slopeDeltas = slopes.slice(1).map((slope, index) => slope - slopes[index]);
         const medianSlopeDelta = median(slopeDeltas);
         const medianSlopeDeltaDeviation = median(slopeDeltas.map((delta) => Math.abs(delta - medianSlopeDelta)));
-        const medianAxisStep = median(axisSteps);`;
+        const medianAxisStep = median(axisSteps);
+        const nearestNeighbor = beforeRow ? localNeighbors[0] : localNeighbors[localNeighbors.length - 1];
+        const endpointGap = Math.abs(candidateAxis - axisCoordinate(nearestNeighbor));
+        if (endpointGap > medianAxisStep * 1.75) return false;
+
+        const slopeCoherent = medianSlopeDeviation <= Math.max(0.08, Math.abs(medianSlope) * 0.4);
+        const curvatureCoherent = slopeDeltas.length >= 2
+          && medianSlopeDeltaDeviation <= Math.max(0.04, Math.abs(medianSlopeDelta) * 0.55)
+          && Math.abs(medianSlopeDelta) <= 0.18;
+        if (!slopeCoherent && !curvatureCoherent) return false;
+        const endpointStepRatio = medianAxisStep > 0 ? endpointGap / medianAxisStep : 1;
+        const nearestSlope = beforeRow ? slopes[0] : slopes[slopes.length - 1];
+        const extrapolatedSlope = curvatureCoherent
+          ? nearestSlope + (beforeRow ? -1 : 1) * medianSlopeDelta * endpointStepRatio
+          : medianSlope;
+        const predictedCross = crossCoordinate(nearestNeighbor)
+          + extrapolatedSlope * (candidateAxis - axisCoordinate(nearestNeighbor));`;
 
 const newBlock = `const localPool = beforeRow ? orderedNeighbors.slice(0, 5) : orderedNeighbors.slice(-5);
         const median = (values: number[]) => {
@@ -60,16 +76,7 @@ const newBlock = `const localPool = beforeRow ? orderedNeighbors.slice(0, 5) : o
             && Math.abs(medianSlopeDelta) <= 0.18;
           if (!slopeCoherent && !curvatureCoherent) return null;
           const coherenceScore = Math.min(medianSlopeDeviation / slopeLimit, medianSlopeDeltaDeviation / curvatureLimit);
-          return {
-            members,
-            slopes,
-            axisSteps,
-            medianSlope,
-            medianSlopeDelta,
-            slopeCoherent,
-            curvatureCoherent,
-            coherenceScore
-          };
+          return { members, slopes, axisSteps, medianSlope, medianSlopeDelta, curvatureCoherent, coherenceScore };
         };
         const supportCandidates = [localPool];
         if (localPool.length >= 5) {
@@ -82,13 +89,24 @@ const newBlock = `const localPool = beforeRow ? orderedNeighbors.slice(0, 5) : o
           .filter((support): support is NonNullable<ReturnType<typeof evaluateEndpointSupport>> => support !== null)
           .sort((left, right) => left.coherenceScore - right.coherenceScore)[0];
         if (!endpointSupport) return false;
-        const { members: localNeighbors, slopes, axisSteps, medianSlope, medianSlopeDelta, slopeCoherent, curvatureCoherent } = endpointSupport;
-        const medianAxisStep = median(axisSteps);`;
+        const { members: localNeighbors, slopes, axisSteps, medianSlope, medianSlopeDelta, curvatureCoherent } = endpointSupport;
+        const medianAxisStep = median(axisSteps);
+        const nearestNeighbor = beforeRow ? localNeighbors[0] : localNeighbors[localNeighbors.length - 1];
+        const endpointGap = Math.abs(candidateAxis - axisCoordinate(nearestNeighbor));
+        if (endpointGap > medianAxisStep * 1.75) return false;
+
+        const endpointStepRatio = medianAxisStep > 0 ? endpointGap / medianAxisStep : 1;
+        const nearestSlope = beforeRow ? slopes[0] : slopes[slopes.length - 1];
+        const extrapolatedSlope = curvatureCoherent
+          ? nearestSlope + (beforeRow ? -1 : 1) * medianSlopeDelta * endpointStepRatio
+          : medianSlope;
+        const predictedCross = crossCoordinate(nearestNeighbor)
+          + extrapolatedSlope * (candidateAxis - axisCoordinate(nearestNeighbor));`;
 
 if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
 } else if (!source.includes("const evaluateEndpointSupport = (members: MaskCandidateOutput[])")) {
-  throw new Error("Unable to locate curvature-aware endpoint support block for robust neighbor consensus patch");
+  throw new Error("Unable to locate complete curvature-aware endpoint support block for robust neighbor consensus patch");
 }
 
 await fs.writeFile(path, source);
