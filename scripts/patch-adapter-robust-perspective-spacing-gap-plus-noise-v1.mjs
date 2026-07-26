@@ -51,7 +51,8 @@ const newBlock = `        if (localPoolAxisSteps.length >= 3) {
                 for (let right = left + 1; right < support.length; right += 1) {
                   const first = support[left];
                   const second = support[right];
-                  const robustSlope = (second.value - first.value) / Math.max(second.index - first.index, 1);
+                  if (second.index - first.index < 2) continue;
+                  const robustSlope = (second.value - first.value) / (second.index - first.index);
                   if (Math.abs(robustSlope) > 0.55) continue;
                   const robustIntercept = first.value - (robustSlope * first.index);
                   const robustExpectedStep = Math.exp(robustIntercept + (robustSlope * candidateIndex));
