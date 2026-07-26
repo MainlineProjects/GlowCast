@@ -40,4 +40,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-perspective-spacing-gap-plus-expanded-noise.mjs");
+await import("./patch-adapter-single-spacing-noise-budget-v1.mjs");
 console.log("endpoint spacing now tolerates one bounded expanded noisy interval without excusing missing-opening-sized gaps");
