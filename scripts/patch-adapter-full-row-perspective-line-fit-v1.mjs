@@ -47,4 +47,5 @@ if (source.includes(oldRowSpan) && source.includes(oldColumnSpan)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-full-row-perspective-line-fit.mjs");
-console.log("perspective-sloped repeated-opening ranking now validates every member against the full row or column trend");
+await import("./patch-adapter-bounded-curved-perspective-row-v1.mjs");
+console.log("perspective-sloped repeated-opening ranking now validates every member against a bounded straight or gradually curved perspective trend");
