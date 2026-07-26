@@ -12,9 +12,13 @@ function adjacentBounds(robustSlope, adjacentOnExpandingSide) {
   };
 }
 
+function approximatelyEqual(actual, expected, message) {
+  assert.ok(Math.abs(actual - expected) <= 1e-12, `${message}: expected ${expected}, got ${actual}`);
+}
+
 const flat = adjacentBounds(0, true);
-assert.equal(flat.compressedNoiseFloor, 0.70, "flat rows should keep symmetric adjacent compression tolerance");
-assert.equal(flat.expandedNoiseCeiling, 1.22, "flat rows should keep symmetric adjacent expansion tolerance");
+approximatelyEqual(flat.compressedNoiseFloor, 0.70, "flat rows should keep symmetric adjacent compression tolerance");
+approximatelyEqual(flat.expandedNoiseCeiling, 1.22, "flat rows should keep symmetric adjacent expansion tolerance");
 
 const shallow = adjacentBounds(0.018, true);
 assert.ok(shallow.compressedNoiseFloor > 0.70 && shallow.compressedNoiseFloor < 0.72,
@@ -23,15 +27,15 @@ assert.ok(shallow.expandedNoiseCeiling < 1.22 && shallow.expandedNoiseCeiling > 
   "shallow perspective should tighten expansion only slightly");
 
 const strong = adjacentBounds(0.18, true);
-assert.equal(strong.compressedNoiseFloor, 0.78, "strong perspective should retain the established near-side compression guard");
-assert.equal(strong.expandedNoiseCeiling, 1.16, "strong perspective should retain the established near-side expansion guard");
+approximatelyEqual(strong.compressedNoiseFloor, 0.78, "strong perspective should retain the established near-side compression guard");
+approximatelyEqual(strong.expandedNoiseCeiling, 1.16, "strong perspective should retain the established near-side expansion guard");
 
 const extreme = adjacentBounds(0.40, true);
-assert.equal(extreme.compressedNoiseFloor, 0.78, "perspective strictness should remain bounded at the established maximum");
-assert.equal(extreme.expandedNoiseCeiling, 1.16, "perspective strictness should remain bounded at the established maximum");
+approximatelyEqual(extreme.compressedNoiseFloor, 0.78, "perspective strictness should remain bounded at the established maximum");
+approximatelyEqual(extreme.expandedNoiseCeiling, 1.16, "perspective strictness should remain bounded at the established maximum");
 
 const farSide = adjacentBounds(0.18, false);
-assert.deepEqual(farSide, { compressedNoiseFloor: 0.70, expandedNoiseCeiling: 1.22 },
-  "far-side adjacent noise should retain the existing bounds");
+approximatelyEqual(farSide.compressedNoiseFloor, 0.70, "far-side adjacent compression should retain the existing bound");
+approximatelyEqual(farSide.expandedNoiseCeiling, 1.22, "far-side adjacent expansion should retain the existing bound");
 
 console.log("strength-aware adjacent spacing-noise smoke passed");
