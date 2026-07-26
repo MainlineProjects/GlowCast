@@ -44,4 +44,5 @@ if (source.includes(oldImbalance) && source.includes(oldGuard)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-perspective-aware-centered-upper-arch-ranking.mjs");
-console.log("centered upper-arch coherence now tolerates whole-opening perspective skew without admitting one-corner bulges");
+await import("./patch-adapter-bound-perspective-skew-v1.mjs");
+console.log("centered upper-arch coherence now tolerates bounded whole-opening perspective skew without admitting one-corner bulges or extreme lateral distortion");
