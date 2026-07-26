@@ -58,11 +58,18 @@ const newBlock = `        if (localPoolAxisSteps.length >= 3) {
                   const robustCandidateRatio = step / Math.max(robustExpectedStep, 1e-6);
                   if (robustCandidateRatio <= 1.58) continue;
                   const remainingSupport = support.filter((_, index) => index !== left && index !== right);
-                  const remainingSupportHasNoLargeGap = remainingSupport.every((point) => {
+                  let compressedNoiseCount = 0;
+                  const remainingSupportIsCompatible = remainingSupport.every((point) => {
                     const predictedStep = Math.exp(robustIntercept + (robustSlope * point.index));
-                    return Math.exp(point.value) / Math.max(predictedStep, 1e-6) <= 1.25;
+                    const ratio = Math.exp(point.value) / Math.max(predictedStep, 1e-6);
+                    if (ratio >= (1 / 1.10) && ratio <= 1.10) return true;
+                    if (ratio >= 0.45 && ratio < (1 / 1.10)) {
+                      compressedNoiseCount += 1;
+                      return compressedNoiseCount <= 1;
+                    }
+                    return false;
                   });
-                  if (remainingSupportHasNoLargeGap) return true;
+                  if (remainingSupportIsCompatible) return true;
                 }
               }
             }
@@ -73,7 +80,7 @@ const newBlock = `        if (localPoolAxisSteps.length >= 3) {
 
 if (source.includes(oldBlock)) {
   source = source.replace(oldBlock, newBlock);
-} else if (!source.includes("const remainingSupportHasNoLargeGap = remainingSupport.every")) {
+} else if (!source.includes("const remainingSupportIsCompatible = remainingSupport.every")) {
   throw new Error("Unable to locate robust perspective spacing consensus block for gap-plus-noise patch");
 }
 
