@@ -22,4 +22,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-spacing-aware-endpoint-consensus.mjs");
-console.log("endpoint neighbor consensus now stands down when its local support crosses a missing-opening-sized spacing gap");
+await import("./patch-adapter-perspective-normalized-endpoint-spacing-v1.mjs");
+console.log("endpoint neighbor consensus now follows local perspective spacing without crossing missing-opening-sized gaps");
