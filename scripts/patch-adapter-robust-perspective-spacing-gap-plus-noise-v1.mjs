@@ -87,4 +87,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-perspective-spacing-gap-plus-noise.mjs");
-console.log("endpoint spacing now keeps detecting coherent missing-opening gaps despite one separate compressed noisy interval");
+await import("./patch-adapter-robust-perspective-spacing-expanded-noise-v1.mjs");
+console.log("endpoint spacing now keeps detecting coherent missing-opening gaps despite one separate compressed or moderately expanded noisy interval");
