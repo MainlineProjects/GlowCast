@@ -29,4 +29,5 @@ if (source.includes(oldStrength) && source.includes(oldGuard)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-location-aware-architectural-curvature-ranking.mjs");
-console.log("paired-mask curvature now requires meaningful smooth curvature to occur in a plausible vertical architectural location");
+await import("./patch-adapter-top-arch-location-coherence-v1.mjs");
+console.log("paired-mask curvature now requires plausible vertical location and upper-arch coherence");
