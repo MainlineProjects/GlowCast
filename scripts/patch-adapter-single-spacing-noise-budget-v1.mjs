@@ -44,4 +44,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-single-spacing-noise-budget.mjs");
+await import("./patch-adapter-adjacent-spacing-noise-guard-v1.mjs");
 console.log("robust perspective spacing fallback now spends one shared noise budget across compressed or expanded intervals");
