@@ -111,4 +111,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-endpoint-neighbor-consensus.mjs");
-console.log("endpoint outlier suppression now chooses the most coherent four-of-five local support set so one noisy neighbor cannot steer the prediction");
+await import("./patch-adapter-spacing-aware-endpoint-consensus-v1.mjs");
+console.log("endpoint outlier suppression now chooses the most coherent four-of-five local support set without crossing missing-opening-sized spacing gaps");
