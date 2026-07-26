@@ -27,4 +27,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-bound-perspective-skew-ranking.mjs");
-console.log("paired-mask perspective tolerance now rejects extreme whole-opening lateral skew while preserving ordinary oblique perspective");
+await import("./patch-adapter-perspective-sloped-row-grouping-v1.mjs");
+console.log("paired-mask perspective tolerance now rejects extreme whole-opening lateral skew while repeated-opening ranking preserves bounded perspective-sloped rows and columns");
