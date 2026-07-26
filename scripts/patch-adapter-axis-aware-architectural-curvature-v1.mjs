@@ -15,4 +15,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-axis-aware-architectural-curvature-ranking.mjs");
-console.log("paired-mask curvature now favors principal-axis architectural arches over diagonal smooth blobs");
+await import("./patch-adapter-location-aware-architectural-curvature-v1.mjs");
+console.log("paired-mask curvature now favors principal-axis, location-aware architectural arches over smooth blobs");
