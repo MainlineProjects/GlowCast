@@ -27,4 +27,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-direction-aware-adjacent-spacing-noise.mjs");
+await import("./patch-adapter-strength-aware-adjacent-spacing-noise-v1.mjs");
 console.log("adjacent spacing-noise support now respects the facade perspective direction");
