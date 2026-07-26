@@ -24,7 +24,9 @@ function chooseEndpointSupport(points) {
     const curvatureDeviation = median(slopeDeltas.map((delta) => Math.abs(delta - medianSlopeDelta)));
     const slopeLimit = Math.max(0.08, Math.abs(medianSlope) * 0.4);
     const curvatureLimit = Math.max(0.04, Math.abs(medianSlopeDelta) * 0.55);
-    const slopeCoherent = slopeDeviation <= slopeLimit;
+    const slopeRange = Math.max(...slopes) - Math.min(...slopes);
+    const slopeRangeCoherent = slopeRange <= Math.max(0.18, Math.abs(medianSlope) * 0.9);
+    const slopeCoherent = slopeDeviation <= slopeLimit && slopeRangeCoherent;
     const curvatureCoherent = slopeDeltas.length >= 2 && curvatureDeviation <= curvatureLimit && Math.abs(medianSlopeDelta) <= 0.18;
     if (!slopeCoherent && !curvatureCoherent) return null;
     return {
@@ -51,8 +53,7 @@ const cleanCurve = [
   { x: 80, y: 22 },
   { x: 100, y: 30 },
 ];
-const cleanSupport = chooseEndpointSupport(cleanCurve);
-assert.ok(cleanSupport, "clean curved endpoint support should remain coherent");
+assert.ok(chooseEndpointSupport(cleanCurve), "clean curved endpoint support should remain coherent");
 
 const oneNoisyNeighbor = [
   { x: 20, y: 10 },
