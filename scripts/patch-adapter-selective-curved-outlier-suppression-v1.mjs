@@ -7,12 +7,12 @@ const oldBlock = `const repeatedRowOutlier = obviousRepeatedRowOutlier || obviou
       const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * (repeatedRowOutlier ? 0.35 : 1) : 0;`;
 
 const newBlock = `const repeatedRowOutlier = obviousRepeatedRowOutlier || obviousRepeatedRowPositionOutlier || obviousRepeatedRowRotationOutlier || multipleMissingOpeningBridges || abruptSpacingDirectionBreak || localizedSpacingOutlier || localizedNarrowSpacingOutlier;
-      const isCandidateInteriorGeometricOutlier = (axis: \"row\" | \"column\") => {
+      const isCandidateInteriorGeometricOutlier = (axis: "row" | "column") => {
         if (alignedNeighbors.length < 3) return false;
-        const axisCoordinate = axis === \"row\"
+        const axisCoordinate = axis === "row"
           ? (member: MaskCandidateOutput) => member.box.x + member.box.width / 2
           : (member: MaskCandidateOutput) => member.box.y + member.box.height / 2;
-        const crossCoordinate = axis === \"row\"
+        const crossCoordinate = axis === "row"
           ? (member: MaskCandidateOutput) => member.box.y + member.box.height / 2
           : (member: MaskCandidateOutput) => member.box.x + member.box.width / 2;
         const orderedNeighbors = [...alignedNeighbors].sort((left, right) => axisCoordinate(left) - axisCoordinate(right));
@@ -45,14 +45,14 @@ const newBlock = `const repeatedRowOutlier = obviousRepeatedRowOutlier || obviou
         const medianPredictionDeviation = predictionDeviations.length % 2 === 0
           ? (predictionDeviations[deviationMiddle - 1] + predictionDeviations[deviationMiddle]) / 2
           : predictionDeviations[deviationMiddle];
-        const candidateCrossSize = axis === \"row\" ? candidate.box.height : candidate.box.width;
-        const crossBoundsSize = axis === \"row\" ? bounds.height : bounds.width;
+        const candidateCrossSize = axis === "row" ? candidate.box.height : candidate.box.width;
+        const crossBoundsSize = axis === "row" ? bounds.height : bounds.width;
         const outlierTolerance = Math.max(crossBoundsSize * 0.025, candidateCrossSize * 0.28);
         const neighborModelCoherent = medianPredictionDeviation <= outlierTolerance * 0.65;
         return neighborModelCoherent && Math.abs(crossCoordinate(candidate) - predictedCross) > outlierTolerance;
       };
       const candidateGeometricOutlier = repeatedRowOutlier
-        && (isCandidateInteriorGeometricOutlier(\"row\") || isCandidateInteriorGeometricOutlier(\"column\"));
+        && (isCandidateInteriorGeometricOutlier("row") || isCandidateInteriorGeometricOutlier("column"));
       const groupOutlierMultiplier = candidateGeometricOutlier ? 0.35 : repeatedRowOutlier ? 0.78 : 1;
       const groupScore = credibleGroupMember ? Math.min(1, consistentNeighborCount / 2) * groupOutlierMultiplier : 0;`;
 
@@ -64,4 +64,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-selective-curved-outlier-suppression.mjs");
-console.log("repeated-opening ranking now selectively suppresses an interior geometric outlier while preserving most group confidence for surrounding valid masks");
+await import("./patch-adapter-selective-endpoint-outlier-suppression-v1.mjs");
+console.log("repeated-opening ranking now selectively suppresses displaced interior or endpoint masks while preserving most group confidence for surrounding valid masks");
