@@ -42,4 +42,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-perspective-normalized-endpoint-spacing.mjs");
-console.log("endpoint support spacing now follows local perspective progression while still rejecting missing-opening-sized gaps");
+await import("./patch-adapter-robust-perspective-spacing-consensus-v1.mjs");
+console.log("endpoint support spacing now follows robust local perspective progression while still rejecting coherent missing-opening-sized gaps");
