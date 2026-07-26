@@ -46,4 +46,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-adjacent-spacing-noise-guard.mjs");
+await import("./patch-adapter-direction-aware-adjacent-spacing-noise-v1.mjs");
 console.log("spacing-noise support is now stricter immediately beside a suspected missing opening");
