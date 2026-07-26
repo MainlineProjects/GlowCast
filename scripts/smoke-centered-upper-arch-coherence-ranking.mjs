@@ -58,8 +58,8 @@ assert.ok(
 const offCenterUpperBulge = Array.from({ length: 16 }, (_, index) => {
   const angle = (Math.PI * 2 * index) / 16;
   const upper = Math.max(0, Math.sin(angle)) ** 2;
-  const lateral = 0.55 + 0.45 * Math.max(0, Math.cos(angle));
-  return 0.48 * upper * lateral;
+  const lateral = 0.35 + Math.max(0, Math.cos(angle));
+  return 0.7 * upper * lateral;
 });
 const offCenter = curvatureEvidence(offCenterUpperBulge);
 assert.ok(
