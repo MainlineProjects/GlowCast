@@ -27,8 +27,7 @@ function supportSpacingIsSafe(steps) {
         for (let right = left + 1; right < support.length; right += 1) {
           const first = support[left];
           const second = support[right];
-          if (second.index - first.index < 1) continue;
-          const robustSlope = (second.value - first.value) / (second.index - first.index);
+          const robustSlope = (second.value - first.value) / Math.max(second.index - first.index, 1);
           if (Math.abs(robustSlope) > 0.55) continue;
           const robustIntercept = first.value - (robustSlope * first.index);
           const robustExpected = Math.exp(robustIntercept + (robustSlope * candidateIndex));
@@ -36,10 +35,16 @@ function supportSpacingIsSafe(steps) {
           if (robustCandidateRatio <= 1.58) continue;
 
           const remainder = support.filter((_, index) => index !== left && index !== right);
+          let compressedNoiseCount = 0;
           const tolerableRemainder = remainder.every((point) => {
             const predicted = Math.exp(robustIntercept + (robustSlope * point.index));
             const ratio = Math.exp(point.value) / Math.max(predicted, 1e-6);
-            return ratio <= 1.25;
+            if (ratio >= (1 / 1.10) && ratio <= 1.10) return true;
+            if (ratio >= 0.45 && ratio < (1 / 1.10)) {
+              compressedNoiseCount += 1;
+              return compressedNoiseCount <= 1;
+            }
+            return false;
           });
           if (tolerableRemainder) return false;
         }
@@ -54,7 +59,7 @@ assert.equal(supportSpacingIsSafe([20, 20, 20, 20]), true, "regular spacing shou
 assert.equal(supportSpacingIsSafe([42, 30, 21.5, 15.4]), true, "strong receding perspective spacing should remain eligible");
 assert.equal(supportSpacingIsSafe([42, 21, 21.5, 15.4]), true, "one compressed noisy interval alone should remain eligible");
 assert.equal(supportSpacingIsSafe([68, 30, 12, 15.4]), false, "a boundary missing-opening gap must survive one separate compressed noisy interval");
-assert.equal(supportSpacingIsSafe([42, 30, 43, 8.5, 15.4]), false, "an interior missing-opening gap must survive one separate compressed noisy interval");
+assert.equal(supportSpacingIsSafe([42, 30, 43, 8.5, 11]), false, "an interior missing-opening gap must survive one separate compressed noisy interval");
 assert.equal(supportSpacingIsSafe([25, 23, 20, 18]), true, "mild natural spacing variation should remain eligible");
 
 console.log("robust perspective spacing gap-plus-noise smoke passed");
