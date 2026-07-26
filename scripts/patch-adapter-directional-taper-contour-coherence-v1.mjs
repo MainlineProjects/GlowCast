@@ -34,4 +34,6 @@ if (source.includes(oldBlock)) {
 }
 
 await fs.writeFile(path, source);
-console.log("paired-mask contour comparison now preserves smooth architectural taper while rejecting localized contour breaks");
+await import("./patch-adapter-smooth-architectural-curvature-v1.mjs");
+await import("./smoke-smooth-architectural-curvature-ranking.mjs");
+console.log("paired-mask contour comparison now preserves smooth architectural taper and bounded architectural curvature while rejecting localized contour breaks");
