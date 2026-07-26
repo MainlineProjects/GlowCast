@@ -51,4 +51,5 @@ if (source.includes(oldBlock)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-perspective-spacing-consensus.mjs");
-console.log("endpoint spacing now requires coherent leave-one-out perspective evidence before declaring a missing-opening gap");
+await import("./patch-adapter-robust-perspective-spacing-gap-plus-noise-v1.mjs");
+console.log("endpoint spacing now requires robust perspective evidence and keeps detecting missing-opening gaps despite one separate noisy interval");
