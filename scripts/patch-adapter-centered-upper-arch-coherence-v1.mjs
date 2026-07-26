@@ -40,4 +40,5 @@ if (source.includes(oldBias) && source.includes(oldGuard)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-centered-upper-arch-coherence-ranking.mjs");
-console.log("paired-mask curvature now requires upper arches to remain laterally centered");
+await import("./patch-adapter-perspective-aware-centered-upper-arch-v1.mjs");
+console.log("paired-mask curvature now preserves centered upper arches through coherent perspective skew while rejecting off-center bulges");
