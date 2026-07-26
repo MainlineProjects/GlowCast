@@ -65,4 +65,5 @@ if (source.includes(oldRowFit) && source.includes(oldColumnFit)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-curved-perspective-fit.mjs");
-console.log("curved repeated-opening fitting now uses a robust interior consensus so one bad midpoint cannot steer the fitted façade curve");
+await import("./patch-adapter-selective-curved-outlier-suppression-v1.mjs");
+console.log("curved repeated-opening fitting now uses robust interior consensus and selectively suppresses one displaced interior mask without flattening the surrounding valid group");
