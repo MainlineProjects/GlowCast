@@ -20,4 +20,5 @@ if (source.includes(oldBias)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-top-arch-location-coherence-ranking.mjs");
-console.log("paired-mask curvature now distinguishes upper architectural arches from lower smooth bulges");
+await import("./patch-adapter-centered-upper-arch-coherence-v1.mjs");
+console.log("paired-mask curvature now distinguishes centered upper architectural arches from lower, side, and off-center smooth bulges");
