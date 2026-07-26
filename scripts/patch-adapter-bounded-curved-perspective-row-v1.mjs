@@ -75,4 +75,5 @@ if (source.includes(oldRowResidual) && source.includes(oldColumnResidual)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-bounded-curved-perspective-row.mjs");
-console.log("repeated-opening progression now preserves bounded gradual curvature while rejecting local displacement and excessive bend");
+await import("./patch-adapter-robust-curved-perspective-fit-v1.mjs");
+console.log("repeated-opening progression now preserves bounded gradual curvature with a robust interior fit that resists one displaced midpoint");
