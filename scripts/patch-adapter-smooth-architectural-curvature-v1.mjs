@@ -42,4 +42,5 @@ if (source.includes(oldBlock)) {
 }
 
 await fs.writeFile(path, source);
-console.log("paired-mask contour comparison now preserves bounded smooth architectural curvature while rejecting localized contour damage");
+await import("./patch-adapter-axis-aware-architectural-curvature-v1.mjs");
+console.log("paired-mask contour comparison now preserves bounded axis-aware smooth architectural curvature while rejecting localized contour damage");
