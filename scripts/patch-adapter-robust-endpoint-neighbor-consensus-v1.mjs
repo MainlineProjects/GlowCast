@@ -52,7 +52,9 @@ const newBlock = `const localPool = beforeRow ? orderedNeighbors.slice(0, 5) : o
           const medianSlopeDeltaDeviation = median(slopeDeltas.map((delta) => Math.abs(delta - medianSlopeDelta)));
           const slopeLimit = Math.max(0.08, Math.abs(medianSlope) * 0.4);
           const curvatureLimit = Math.max(0.04, Math.abs(medianSlopeDelta) * 0.55);
-          const slopeCoherent = medianSlopeDeviation <= slopeLimit;
+          const slopeRange = Math.max(...slopes) - Math.min(...slopes);
+          const slopeRangeCoherent = slopeRange <= Math.max(0.18, Math.abs(medianSlope) * 0.9);
+          const slopeCoherent = medianSlopeDeviation <= slopeLimit && slopeRangeCoherent;
           const curvatureCoherent = slopeDeltas.length >= 2
             && medianSlopeDeltaDeviation <= curvatureLimit
             && Math.abs(medianSlopeDelta) <= 0.18;
