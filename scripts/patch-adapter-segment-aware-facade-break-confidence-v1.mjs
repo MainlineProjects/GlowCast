@@ -49,4 +49,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-segment-aware-facade-break-confidence.mjs");
+await import("./patch-adapter-independent-facade-segment-confidence-v1.mjs");
 console.log("confirmed facade discontinuities now isolate contiguous architectural confidence on each side");
