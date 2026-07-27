@@ -44,4 +44,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-quality-balanced-side-support.mjs");
+await import("./patch-adapter-robust-side-support-quality-v1.mjs");
 console.log("perspective coherence now balances clean support length against side-specific evidence quality");
