@@ -33,7 +33,7 @@ const newBlock = `const supportResiduals = remainingSupport
                     if (supportResiduals.length >= 3) {
                       let largestDistantResidual = -1;
                       supportResiduals.forEach((sample, index) => {
-                        if (sample.distance <= 1) return;
+                        if (sample.distance <= 2) return;
                         if (sample.residual > largestDistantResidual) {
                           largestDistantResidual = sample.residual;
                           trimmedSupportIndex = index;
