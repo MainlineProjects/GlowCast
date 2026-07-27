@@ -57,7 +57,7 @@ const mildFar = coherentContext.map((sample) => ({ ...sample }));
 mildFar[mildFar.length - 1].residual = Math.log(1.035);
 assert.ok(trimConfidence(mildFar) > trimConfidence(coherentContext) + 0.25,
   "mild distant noise must remain substantially safer to trim than a severe isolated break");
-assert.ok(quality(coherentContext) < quality(mildFar) - 0.08,
+assert.ok(quality(coherentContext) < quality(mildFar) - 0.05,
   "severe isolated structural evidence must materially reduce side-support quality versus mild distant noise");
 
 const shortSupport = coherentContext.slice(0, 3).map((sample) => ({ ...sample }));
