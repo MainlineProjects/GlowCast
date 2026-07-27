@@ -30,4 +30,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-coherence-weighted-perspective-strength.mjs");
+await import("./patch-adapter-local-weighted-perspective-coherence-v1.mjs");
 console.log("perspective strictness now requires both slope strength and coherent supporting spacing");
