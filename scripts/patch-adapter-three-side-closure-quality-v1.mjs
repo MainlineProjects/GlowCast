@@ -6,20 +6,24 @@ let source = await fs.readFile(path, "utf8");
 const marker = "threeSideClosureQuality";
 
 if (!source.includes(marker)) {
-  const typeTarget = `type SideCoverage = {\n  sides: number;\n  hasHorizontal: boolean;\n  hasVertical: boolean;\n};`;
-  const typeReplacement = `type SideCoverage = {\n  sides: number;\n  hasHorizontal: boolean;\n  hasVertical: boolean;\n  weakestPresentRatio: number;\n};`;
-  if (!source.includes(typeTarget)) throw new Error("fallback side-coverage type not found");
-  source = source.replace(typeTarget, typeReplacement);
+  const typePattern = /type\s+SideCoverage\s*=\s*\{([\s\S]*?)\n\s*\};/;
+  const typeMatch = source.match(typePattern);
+  if (!typeMatch) throw new Error("fallback side-coverage type not found");
+  if (!typeMatch[1].includes("weakestPresentRatio")) {
+    source = source.replace(typePattern, (_match, body) =>
+      `type SideCoverage = {${body}\n  weakestPresentRatio: number;\n};`
+    );
+  }
 
-  const returnTarget = `  return {\n    sides: [topPresent, bottomPresent, leftPresent, rightPresent].filter(Boolean).length,\n    hasHorizontal: topPresent || bottomPresent,\n    hasVertical: leftPresent || rightPresent\n  };`;
-  const returnReplacement = `  const presentHits = [\n    topPresent ? top : null,\n    bottomPresent ? bottom : null,\n    leftPresent ? left : null,\n    rightPresent ? right : null\n  ].filter((hits): hits is number => hits !== null);\n  const weakestPresentRatio = presentHits.length\n    ? Math.min(...presentHits) / Math.max(minHits, 1)\n    : 0;\n\n  return {\n    sides: presentHits.length,\n    hasHorizontal: topPresent || bottomPresent,\n    hasVertical: leftPresent || rightPresent,\n    weakestPresentRatio\n  };`;
-  if (!source.includes(returnTarget)) throw new Error("fallback side-coverage return block not found");
-  source = source.replace(returnTarget, returnReplacement);
+  const returnPattern = /\s+return\s*\{\s*sides:\s*\[topPresent,\s*bottomPresent,\s*leftPresent,\s*rightPresent\]\.filter\(Boolean\)\.length,\s*hasHorizontal:\s*topPresent\s*\|\|\s*bottomPresent,\s*hasVertical:\s*leftPresent\s*\|\|\s*rightPresent\s*\};/;
+  const returnReplacement = `\n  const presentHits = [\n    topPresent ? top : null,\n    bottomPresent ? bottom : null,\n    leftPresent ? left : null,\n    rightPresent ? right : null\n  ].filter((hits): hits is number => hits !== null);\n  const weakestPresentRatio = presentHits.length\n    ? Math.min(...presentHits) / Math.max(minHits, 1)\n    : 0;\n\n  return {\n    sides: presentHits.length,\n    hasHorizontal: topPresent || bottomPresent,\n    hasVertical: leftPresent || rightPresent,\n    weakestPresentRatio\n  };`;
+  if (!returnPattern.test(source)) throw new Error("fallback side-coverage return block not found");
+  source = source.replace(returnPattern, returnReplacement);
 
-  const shapeTarget = `    const threeSideShapeGuard = sideCoverage.sides !== 3 || (aspect >= 0.28 && aspect <= 3.8);\n    if (!threeSideShapeGuard) continue;`;
-  const shapeReplacement = `    const threeSideShapeGuard = sideCoverage.sides !== 3 || (aspect >= 0.28 && aspect <= 3.8);\n    if (!threeSideShapeGuard) continue;\n    const threeSideClosureQuality = sideCoverage.sides !== 3 || sideCoverage.weakestPresentRatio >= 1.35;\n    if (!threeSideClosureQuality) continue;`;
-  if (!source.includes(shapeTarget)) throw new Error("three-sided fallback shape guard not found");
-  source = source.replace(shapeTarget, shapeReplacement);
+  const shapePattern = /(\s+const\s+threeSideShapeGuard\s*=\s*sideCoverage\.sides\s*!==\s*3\s*\|\|\s*\(aspect\s*>=\s*0\.28\s*&&\s*aspect\s*<=\s*3\.8\);\s*\n\s*if\s*\(!threeSideShapeGuard\)\s*continue;)/;
+  const shapeMatch = source.match(shapePattern);
+  if (!shapeMatch) throw new Error("three-sided fallback shape guard not found");
+  source = source.replace(shapePattern, `${shapeMatch[1]}\n    const threeSideClosureQuality = sideCoverage.sides !== 3 || sideCoverage.weakestPresentRatio >= 1.35;\n    if (!threeSideClosureQuality) continue;`);
 }
 
 await fs.writeFile(path, source);
