@@ -30,4 +30,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-context-side-support-severity.mjs");
+await import("./patch-adapter-context-residual-magnitude-v1.mjs");
 console.log("side-support structural context now resists one secondary mild residual without hiding sustained noisy evidence");
