@@ -38,4 +38,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-distance-aware-side-support-trim.mjs");
+await import("./patch-adapter-graduated-side-support-trim-confidence-v1.mjs");
 console.log("side-support quality now keeps near-gap residual spikes while trimming isolated distant spikes");
