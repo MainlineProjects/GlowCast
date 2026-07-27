@@ -63,4 +63,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-local-weighted-perspective-coherence.mjs");
+await import("./patch-adapter-continuous-local-perspective-coherence-v1.mjs");
 console.log("perspective spacing coherence now weights evidence nearest the suspected gap most strongly");
