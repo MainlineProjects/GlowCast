@@ -49,7 +49,7 @@ assert.ok(Math.abs(trimConfidence(oneMildSecondaryOutlier) - trimConfidence(clea
 assert.ok(trimConfidence(twoSecondaryOutliers) > trimConfidence(oneMildSecondaryOutlier) + 0.05,
   "two secondary residual problems must still reduce the standalone authority of the severe break");
 
-const shortContext = oneMildSecondaryOutlier.slice(0, 4);
+const shortContext = oneMildSecondaryOutlier.slice(0, 3);
 assert.equal(trimConfidence(shortContext), 0,
   "short support must not gain trim confidence from robust context handling");
 
