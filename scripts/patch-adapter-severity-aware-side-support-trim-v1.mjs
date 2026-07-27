@@ -49,4 +49,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-severity-aware-side-support-trim.mjs");
+await import("./patch-adapter-context-aware-side-support-severity-v1.mjs");
 console.log("side-support trimming now retains more influence for severe residuals even when they are distant");
