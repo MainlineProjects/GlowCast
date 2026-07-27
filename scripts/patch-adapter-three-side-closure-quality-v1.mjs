@@ -15,10 +15,18 @@ if (!source.includes(marker)) {
     );
   }
 
-  const returnPattern = /\s+return\s*\{\s*sides:\s*\[topPresent,\s*bottomPresent,\s*leftPresent,\s*rightPresent\]\.filter\(Boolean\)\.length,\s*hasHorizontal:\s*topPresent\s*\|\|\s*bottomPresent,\s*hasVertical:\s*leftPresent\s*\|\|\s*rightPresent\s*\};/;
-  const returnReplacement = `\n  const presentHits = [\n    topPresent ? top : null,\n    bottomPresent ? bottom : null,\n    leftPresent ? left : null,\n    rightPresent ? right : null\n  ].filter((hits): hits is number => hits !== null);\n  const weakestPresentRatio = presentHits.length\n    ? Math.min(...presentHits) / Math.max(minHits, 1)\n    : 0;\n\n  return {\n    sides: presentHits.length,\n    hasHorizontal: topPresent || bottomPresent,\n    hasVertical: leftPresent || rightPresent,\n    weakestPresentRatio\n  };`;
-  if (!returnPattern.test(source)) throw new Error("fallback side-coverage return block not found");
-  source = source.replace(returnPattern, returnReplacement);
+  const rightPresentPattern = /(\s+const\s+rightPresent\s*=\s*right\s*>=\s*minHits;)/;
+  const rightPresentMatch = source.match(rightPresentPattern);
+  if (!rightPresentMatch) throw new Error("fallback right-side presence marker not found");
+  source = source.replace(rightPresentPattern, `${rightPresentMatch[1]}\n\n  const presentHits = [\n    topPresent ? top : null,\n    bottomPresent ? bottom : null,\n    leftPresent ? left : null,\n    rightPresent ? right : null\n  ].filter((hits): hits is number => hits !== null);\n  const weakestPresentRatio = presentHits.length\n    ? Math.min(...presentHits) / Math.max(minHits, 1)\n    : 0;`);
+
+  const sidesPattern = /sides:\s*\[topPresent,\s*bottomPresent,\s*leftPresent,\s*rightPresent\]\.filter\(Boolean\)\.length/;
+  if (!sidesPattern.test(source)) throw new Error("fallback side-count expression not found");
+  source = source.replace(sidesPattern, "sides: presentHits.length");
+
+  const verticalPattern = /hasVertical:\s*leftPresent\s*\|\|\s*rightPresent\s*,?/;
+  if (!verticalPattern.test(source)) throw new Error("fallback vertical-coverage property not found");
+  source = source.replace(verticalPattern, "hasVertical: leftPresent || rightPresent,\n    weakestPresentRatio");
 
   const shapePattern = /(\s+const\s+threeSideShapeGuard\s*=\s*sideCoverage\.sides\s*!==\s*3\s*\|\|\s*\(aspect\s*>=\s*0\.28\s*&&\s*aspect\s*<=\s*3\.8\);\s*\n\s*if\s*\(!threeSideShapeGuard\)\s*continue;)/;
   const shapeMatch = source.match(shapePattern);
