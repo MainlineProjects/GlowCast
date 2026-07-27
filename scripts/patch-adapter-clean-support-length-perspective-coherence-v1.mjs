@@ -42,4 +42,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-clean-support-length-perspective-coherence.mjs");
+await import("./patch-adapter-side-aware-clean-support-perspective-v1.mjs");
 console.log("perspective spacing coherence now scales locality by continuous clean facade support");
