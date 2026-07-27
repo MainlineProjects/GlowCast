@@ -44,4 +44,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-graduated-side-support-trim-confidence.mjs");
+await import("./patch-adapter-severity-aware-side-support-trim-v1.mjs");
 console.log("side-support quality now discounts isolated residual spikes gradually with distance from the suspected gap");
