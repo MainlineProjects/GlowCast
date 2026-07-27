@@ -16,4 +16,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-fallback-shape-guard.mjs");
+await import("./patch-adapter-three-side-closure-quality-v1.mjs");
 console.log("three-sided fallback masks now reject extreme trim-like aspect ratios");
