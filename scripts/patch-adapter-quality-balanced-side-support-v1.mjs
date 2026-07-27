@@ -22,7 +22,7 @@ const newBlock = `const leftCleanSupportDistance = cleanSupportDistanceForSide(-
                       if (!cleanSamples.length) return 1;
                       const meanResidual = cleanSamples.reduce((sum, sample) => sum + sample.residual, 0) / cleanSamples.length;
                       const normalizedResidual = Math.min(1, meanResidual / cleanSupportResidualLimit);
-                      return 1 - 0.50 * normalizedResidual;
+                      return 1 - 0.55 * normalizedResidual;
                     };
                     const leftCleanSupportQuality = cleanSupportQualityForSide(-1, leftCleanSupportDistance);
                     const rightCleanSupportQuality = cleanSupportQualityForSide(1, rightCleanSupportDistance);
