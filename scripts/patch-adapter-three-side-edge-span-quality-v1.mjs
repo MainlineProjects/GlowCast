@@ -25,4 +25,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-edge-span-quality.mjs");
+await import("./patch-adapter-three-side-edge-distribution-quality-v1.mjs");
 console.log("three-sided fallback masks now require detected-edge support to span meaningful edge length");
