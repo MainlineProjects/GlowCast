@@ -25,4 +25,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-quality-aware-sparse-segment-confidence.mjs");
+await import("./patch-adapter-three-side-fallback-shape-guard-v1.mjs");
 console.log("sparse segment confidence now requires stronger quality from lone support");
