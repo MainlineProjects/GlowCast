@@ -18,4 +18,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-continuous-local-perspective-coherence.mjs");
+await import("./patch-adapter-facade-length-scaled-perspective-coherence-v1.mjs");
 console.log("perspective spacing coherence now falls off continuously with distance from the suspected gap");
