@@ -22,4 +22,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-split-confidence-at-facade-break.mjs");
+await import("./patch-adapter-directional-facade-break-confidence-v1.mjs");
 console.log("repeated facade support now stops trimming across confirmed structural discontinuities");
