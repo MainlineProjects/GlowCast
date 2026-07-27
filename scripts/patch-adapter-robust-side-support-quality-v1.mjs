@@ -29,4 +29,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-robust-side-support-quality.mjs");
+await import("./patch-adapter-distance-aware-side-support-trim-v1.mjs");
 console.log("side-support quality now ignores one isolated residual spike when enough support remains");
