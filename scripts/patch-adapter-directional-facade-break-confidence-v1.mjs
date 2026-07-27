@@ -21,4 +21,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-directional-facade-break-confidence.mjs");
+await import("./patch-adapter-segment-aware-facade-break-confidence-v1.mjs");
 console.log("facade-break confidence now remains independent across opposite sides of a repeated architectural sequence");
