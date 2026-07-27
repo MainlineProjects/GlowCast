@@ -4,9 +4,8 @@ const path = "src/core/maskCandidateAdapter.ts";
 let source = await fs.readFile(path, "utf8");
 
 const marker = "const contextResidualMagnitudeBlend = Math.max";
-const oldBlock = `const contextResidualCap = contextResiduals.length >= 4
-                          ? contextResiduals[contextResiduals.length - 2]
-                          : Number.POSITIVE_INFINITY;`;
+const downstreamMarker = "const confirmedBreakResidualCount = contextResiduals.filter";
+const oldPattern = /const contextResidualCap = contextResiduals\.length >= 4\s*\? contextResiduals\[contextResiduals\.length - 2\]\s*: Number\.POSITIVE_INFINITY;/;
 const newBlock = `const contextSecondWorstResidual = contextResiduals.length >= 2
                           ? contextResiduals[contextResiduals.length - 2]
                           : contextResiduals[contextResiduals.length - 1] ?? 0;
@@ -17,9 +16,9 @@ const newBlock = `const contextSecondWorstResidual = contextResiduals.length >= 
                           ? contextSecondWorstResidual + (contextWorstResidual - contextSecondWorstResidual) * contextResidualMagnitudeBlend
                           : Number.POSITIVE_INFINITY;`;
 
-if (!source.includes(marker)) {
-  if (!source.includes(oldBlock)) throw new Error("Unable to locate robust context residual cap");
-  source = source.replace(oldBlock, newBlock);
+if (!source.includes(marker) && !source.includes(downstreamMarker)) {
+  if (!oldPattern.test(source)) throw new Error("Unable to locate robust context residual cap");
+  source = source.replace(oldPattern, newBlock);
 }
 
 await fs.writeFile(path, source);
