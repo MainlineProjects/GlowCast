@@ -4,8 +4,7 @@ const path = "src/core/maskCandidateAdapter.ts";
 let source = await fs.readFile(path, "utf8");
 
 const marker = "sparseSegmentQualityScale";
-const target = `const segmentEvidenceScale = Math.min(1, segmentContextSamples.length / 2)
-                           * sparseSegmentProximityScale;`;
+const targetPattern = /const segmentEvidenceScale = Math\.min\(1,\s*segmentContextSamples\.length \/ 2\)\s*\* sparseSegmentProximityScale;/;
 const replacement = `const sparseSegmentQualityScale = segmentContextSamples.length === 1
                            ? Math.max(
                                0.35,
@@ -20,8 +19,8 @@ const replacement = `const sparseSegmentQualityScale = segmentContextSamples.len
                            * sparseSegmentQualityScale;`;
 
 if (!source.includes(marker)) {
-  if (!source.includes(target)) throw new Error("proximity-aware segment evidence scale not found");
-  source = source.replace(target, replacement);
+  if (!targetPattern.test(source)) throw new Error("proximity-aware segment evidence scale not found");
+  source = source.replace(targetPattern, replacement);
 }
 
 await fs.writeFile(path, source);
