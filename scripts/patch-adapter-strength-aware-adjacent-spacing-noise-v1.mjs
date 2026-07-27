@@ -27,4 +27,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-strength-aware-adjacent-spacing-noise.mjs");
+await import("./patch-adapter-coherence-weighted-perspective-strength-v1.mjs");
 console.log("adjacent spacing-noise strictness now scales with facade perspective strength");
