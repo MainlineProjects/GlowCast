@@ -23,4 +23,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-proximity-aware-sparse-segment-confidence.mjs");
+await import("./patch-adapter-quality-aware-sparse-segment-confidence-v1.mjs");
 console.log("sparse segment confidence now respects support proximity");
