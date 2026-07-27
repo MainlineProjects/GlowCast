@@ -66,4 +66,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-side-aware-clean-support-perspective.mjs");
+await import("./patch-adapter-quality-balanced-side-support-v1.mjs");
 console.log("perspective coherence now keeps clean facade support independently on each side of a suspected gap");
