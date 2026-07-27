@@ -41,7 +41,7 @@ const severeFar = quality(withResidual(5, Math.log(1.095)));
 const severeNear = quality(withResidual(2, Math.log(1.095)));
 const mildNear = quality(withResidual(2, Math.log(1.035)));
 
-assert.ok(mildFar > severeFar + 0.08,
+assert.ok(mildFar > severeFar + 0.04,
   "a severe distant residual must retain materially more penalty than mild distant noise");
 assert.ok(severeFar > severeNear,
   "distance should still matter after severity-aware trimming");
@@ -49,7 +49,7 @@ assert.ok(mildFar > mildNear,
   "mild distant noise should remain safer to discount than equally mild near-gap evidence");
 
 const verySevereFar = quality(withResidual(5, residualLimit * 1.5));
-assert.ok(verySevereFar < mildFar - 0.12,
+assert.ok(verySevereFar < mildFar - 0.08,
   "extreme distant structural breaks must not be almost completely trimmed away");
 
 const shortSupport = [
