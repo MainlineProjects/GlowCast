@@ -29,4 +29,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-independent-facade-segment-confidence.mjs");
+await import("./patch-adapter-proximity-aware-sparse-segment-confidence-v1.mjs");
 console.log("facade segments now keep confidence local when one side has sparse support");
