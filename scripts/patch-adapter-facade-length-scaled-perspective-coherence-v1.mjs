@@ -29,4 +29,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-facade-length-scaled-perspective-coherence.mjs");
+await import("./patch-adapter-clean-support-length-perspective-coherence-v1.mjs");
 console.log("perspective spacing coherence now scales locality falloff with facade support length");
