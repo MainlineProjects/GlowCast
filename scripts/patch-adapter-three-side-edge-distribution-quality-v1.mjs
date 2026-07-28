@@ -25,4 +25,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-edge-distribution-quality.mjs");
+await import("./patch-adapter-three-side-edge-gap-continuity-v1.mjs");
 console.log("three-sided fallback masks now require edge support to be distributed along each detected edge");
