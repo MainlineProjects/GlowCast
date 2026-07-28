@@ -17,7 +17,7 @@ if (!source.includes(marker)) {
     pattern,
     `const endpointOcclusionShortEdgeDistanceWeight = endpointOcclusionAvailableDirectionalBins < 2
             ? 1
-            : 1 / Math.min(2, endpointOcclusionAvailableDirectionalBins);
+            : 1 / 3;
           const endpointOcclusionShortEdgePositionWeight = endpointOcclusionAvailableDirectionalBins < 2
             ? 1
             : Math.min(
