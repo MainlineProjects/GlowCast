@@ -1,0 +1,32 @@
+import fs from "node:fs/promises";
+
+const path = "src/core/maskCandidateAdapter.ts";
+let source = await fs.readFile(path, "utf8");
+const marker = "stableMaskCandidateId";
+
+if (!source.includes(marker)) {
+  const insertAt = source.indexOf("function addFallbackCandidates(");
+  if (insertAt < 0) throw new Error("fallback candidate insertion point not found");
+
+  const helper = `function stableMaskCandidateId(prefix: string, box: SimpleBox): string {
+  const geometry = [box.x, box.y, box.width, box.height]
+    .map((value) => Math.round(value * 20).toString(36))
+    .join("_");
+  return prefix + "_" + geometry;
+}
+
+`;
+  source = source.slice(0, insertAt) + helper + source.slice(insertAt);
+
+  const fallbackPattern = /id: "mask_fallback_" \+ Date\.now\(\) \+ "_" \+ next\.length,/;
+  const candidatePattern = /id: "mask_candidate_" \+ Date\.now\(\) \+ "_" \+ accepted\.length,/;
+  if (!fallbackPattern.test(source)) throw new Error("timestamp fallback ID not found");
+  if (!candidatePattern.test(source)) throw new Error("timestamp detector ID not found");
+
+  source = source.replace(fallbackPattern, 'id: stableMaskCandidateId("mask_fallback", box),');
+  source = source.replace(candidatePattern, 'id: stableMaskCandidateId("mask_candidate", box),');
+}
+
+await fs.writeFile(path, source);
+await import("./smoke-stable-mask-candidate-ids.mjs");
+console.log("automatic mask identities now remain stable across repeated scans");
