@@ -36,4 +36,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-evidence-distribution.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-position-weight-v1.mjs");
 console.log("short-edge endpoint relief now requires spatially distributed evidence");
