@@ -37,4 +37,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-directional-shape.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-distance-normalized-shape-v1.mjs");
 console.log("endpoint density relief now requires a sustained directional edge shape");
