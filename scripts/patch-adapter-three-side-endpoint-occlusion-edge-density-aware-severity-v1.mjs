@@ -20,9 +20,19 @@ if (!source.includes(marker)) {
             .map((offset) => binHits.get(bin + direction * offset) ?? 0)
             .sort((a, b) => a - b);
           const robustLocalEdgeDensity = nearbyEdgeHits[1] ?? 0;
+          const resumedSupportBin = bin + direction;
+          const resumedDistanceFromEdge = Math.min(
+            resumedSupportBin,
+            Math.max(0, binCount - 1 - resumedSupportBin)
+          );
+          const endpointOcclusionEdgePositionAwareDensity = resumedDistanceFromEdge <= 0
+            ? 0.72
+            : resumedDistanceFromEdge === 1
+              ? 0.86
+              : 1;
           const densityAwareMinimum = Math.max(
             resumedBinMinHits,
-            Math.ceil(robustLocalEdgeDensity * 0.75)
+            Math.ceil(robustLocalEdgeDensity * 0.75 * endpointOcclusionEdgePositionAwareDensity)
           );
           let continuityAuthority = 1;
           for (const offset of [1, 2, 3]) {
@@ -51,4 +61,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-edge-density-aware-severity.mjs");
-console.log("three-sided fallback endpoint continuity now judges resumed support against robust local edge density");
+await import("./smoke-three-side-endpoint-occlusion-edge-position-density.mjs");
+console.log("three-sided fallback endpoint continuity now judges resumed support against edge position and robust local density");
