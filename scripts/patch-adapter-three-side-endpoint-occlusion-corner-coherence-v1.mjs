@@ -36,4 +36,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-corner-coherence.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-directional-shape-v1.mjs");
 console.log("endpoint density relief now requires coherent support beyond natural corners");
