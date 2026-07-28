@@ -31,4 +31,5 @@ if (!source.includes(marker)) {
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-continuity-aware-density.mjs");
 await import("./patch-adapter-three-side-endpoint-occlusion-soft-continuity-v1.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-edge-position-density-v1.mjs");
 console.log("three-sided fallback endpoint density now ignores support beyond continuity breaks");
