@@ -28,4 +28,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-distance-normalized-shape.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-evidence-capacity-v1.mjs");
 console.log("endpoint directional shape persistence now respects remaining edge span");
