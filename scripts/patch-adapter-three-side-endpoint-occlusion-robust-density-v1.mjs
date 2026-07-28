@@ -31,4 +31,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-robust-density.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-distance-weighted-density-v1.mjs");
 console.log("three-sided fallback endpoint density normalization now resists one isolated dense bin");
