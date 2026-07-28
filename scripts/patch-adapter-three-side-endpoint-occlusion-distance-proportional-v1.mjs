@@ -36,4 +36,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-distance-proportional.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-near-support-gate-v1.mjs");
 console.log("short-edge endpoint support now scales with physical distance from the obstruction");
