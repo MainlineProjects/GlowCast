@@ -45,4 +45,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-density.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-robust-density-v1.mjs");
 console.log("three-sided fallback endpoint occlusion support now scales with surrounding edge density");
