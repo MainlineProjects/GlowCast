@@ -38,4 +38,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-near-support-gate.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-strength-aware-near-support-v1.mjs");
 console.log("far short-edge support now requires convincing near-obstruction continuation");
