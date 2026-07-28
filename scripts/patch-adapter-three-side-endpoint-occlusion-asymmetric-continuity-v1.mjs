@@ -38,4 +38,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-asymmetric-continuity.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-severity-adaptive-continuity-v1.mjs");
 console.log("three-sided fallback endpoint continuity now penalizes weak support nearest the occlusion");
