@@ -25,4 +25,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-edge-gap-continuity.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-support-v1.mjs");
 console.log("three-sided fallback masks now distinguish endpoint occlusion from interior edge breaks");
