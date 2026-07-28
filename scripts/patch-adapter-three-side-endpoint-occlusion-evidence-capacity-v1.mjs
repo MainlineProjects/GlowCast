@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 
 const path = "src/core/maskCandidateAdapter.ts";
 let source = await fs.readFile(path, "utf8");
-const marker = "endpointOcclusionAvailableDirectionalBins";
+const marker = "endpointOcclusionShortEdgeEvidenceCapacity";
 
 if (!source.includes(marker)) {
   const helperStart = source.indexOf("function getFallbackWorstPresentGapRisk(");
@@ -10,14 +10,14 @@ if (!source.includes(marker)) {
   if (helperStart < 0 || helperEnd < 0) throw new Error("fallback edge-gap helper not found");
 
   let helper = source.slice(helperStart, helperEnd);
-  const pattern = /const endpointOcclusionDirectionalPersistence = nextResumedHits <= 0\s*\? 0\s*:\s*Math\.min\(1, thirdResumedHits \/ nextResumedHits\);/;
-  if (!pattern.test(helper)) throw new Error("directional persistence block not found");
+  const pattern = /const endpointOcclusionDirectionalPersistence = endpointOcclusionAvailableDirectionalBins < 3\s*\? 1\s*:\s*nextResumedHits <= 0\s*\? 0\s*:\s*Math\.min\(1, thirdResumedHits \/ nextResumedHits\);/;
+  if (!pattern.test(helper)) throw new Error("distance-normalized directional persistence block not found");
 
   helper = helper.replace(
     pattern,
-    `const endpointOcclusionAvailableDirectionalBins = direction > 0 ? 7 - bin : bin;
+    `const endpointOcclusionShortEdgeEvidenceCapacity = Math.max(1, Math.ceil(minHits * 0.75));
           const endpointOcclusionDirectionalPersistence = endpointOcclusionAvailableDirectionalBins < 3
-            ? 1
+            ? Math.min(1, nextResumedHits / endpointOcclusionShortEdgeEvidenceCapacity)
             : nextResumedHits <= 0
               ? 0
               : Math.min(1, thirdResumedHits / nextResumedHits);`
@@ -27,6 +27,5 @@ if (!source.includes(marker)) {
 }
 
 await fs.writeFile(path, source);
-await import("./smoke-three-side-endpoint-occlusion-distance-normalized-shape.mjs");
-await import("./patch-adapter-three-side-endpoint-occlusion-evidence-capacity-v1.mjs");
-console.log("endpoint directional shape persistence now respects remaining edge span");
+await import("./smoke-three-side-endpoint-occlusion-evidence-capacity.mjs");
+console.log("short-edge endpoint relief now scales with usable evidence capacity");
