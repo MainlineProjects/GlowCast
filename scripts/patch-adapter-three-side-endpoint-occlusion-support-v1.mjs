@@ -18,4 +18,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-support.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-strength-v1.mjs");
 console.log("three-sided fallback endpoint tolerance now requires strong support immediately after the occlusion");
