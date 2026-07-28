@@ -30,5 +30,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-strength-aware-near-support.mjs");
-await import("./patch-adapter-stable-mask-candidate-ids-v1.mjs");
+await import("./patch-adapter-jitter-tolerant-stable-mask-identities-v1.mjs");
 console.log("distant short-edge support now scales with the strength of near-obstruction evidence");
