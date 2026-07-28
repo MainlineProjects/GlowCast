@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 
 const path = "src/core/maskCandidateAdapter.ts";
 let source = await fs.readFile(path, "utf8");
-const marker = "endpointOcclusionShortEdgeDistanceWeight";
+const marker = "endpointOcclusionNearSupportCappedFarHits";
 
 if (!source.includes(marker)) {
   const helperStart = source.indexOf("function getFallbackWorstPresentGapRisk(");
@@ -10,19 +10,21 @@ if (!source.includes(marker)) {
   if (helperStart < 0 || helperEnd < 0) throw new Error("fallback edge-gap helper not found");
 
   let helper = source.slice(helperStart, helperEnd);
-  const pattern = /const endpointOcclusionShortEdgePositionWeight = endpointOcclusionAvailableDirectionalBins < 2\s*\? 1\s*:\s*Math\.min\(1, \(nearestResumedHits \+ 1\) \/ \(nextResumedHits \+ 1\)\);/;
-  if (!pattern.test(helper)) throw new Error("position-weighted short-edge block not found");
+  const pattern = /const endpointOcclusionShortEdgePositionWeight = endpointOcclusionAvailableDirectionalBins < 2\s*\? 1\s*:\s*Math\.min\(\s*1,\s*\(nearestResumedHits \+ nextResumedHits \* endpointOcclusionShortEdgeDistanceWeight\) \/\s*Math\.max\(\s*1,\s*\(nearestResumedHits \+ nextResumedHits\) \*\s*\(\(1 \+ endpointOcclusionShortEdgeDistanceWeight\) \/ 2\)\s*\)\s*\);/;
+  if (!pattern.test(helper)) throw new Error("distance-proportional short-edge position block not found");
 
   helper = helper.replace(
     pattern,
-    `const endpointOcclusionShortEdgeDistanceWeight = endpointOcclusionAvailableDirectionalBins < 2
-            ? 1
-            : 1 / 3;
+    `const endpointOcclusionNearSupportCappedFarHits = Math.min(
+            nextResumedHits,
+            nearestResumedHits * 2
+          );
           const endpointOcclusionShortEdgePositionWeight = endpointOcclusionAvailableDirectionalBins < 2
             ? 1
             : Math.min(
                 1,
-                (nearestResumedHits + nextResumedHits * endpointOcclusionShortEdgeDistanceWeight) /
+                (nearestResumedHits +
+                  endpointOcclusionNearSupportCappedFarHits * endpointOcclusionShortEdgeDistanceWeight) /
                   Math.max(
                     1,
                     (nearestResumedHits + nextResumedHits) *
@@ -35,6 +37,5 @@ if (!source.includes(marker)) {
 }
 
 await fs.writeFile(path, source);
-await import("./smoke-three-side-endpoint-occlusion-distance-proportional.mjs");
-await import("./patch-adapter-three-side-endpoint-occlusion-near-support-gate-v1.mjs");
-console.log("short-edge endpoint support now scales with physical distance from the obstruction");
+await import("./smoke-three-side-endpoint-occlusion-near-support-gate.mjs");
+console.log("far short-edge support now requires convincing near-obstruction continuation");
