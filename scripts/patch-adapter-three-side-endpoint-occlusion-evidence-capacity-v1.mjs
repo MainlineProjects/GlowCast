@@ -28,4 +28,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-evidence-capacity.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-evidence-distribution-v1.mjs");
 console.log("short-edge endpoint relief now scales with usable evidence capacity");
