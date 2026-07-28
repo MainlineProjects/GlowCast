@@ -36,4 +36,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-edge-position-density.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-corner-coherence-v1.mjs");
 console.log("endpoint occlusion density now avoids over-penalizing support at natural edge corners");
