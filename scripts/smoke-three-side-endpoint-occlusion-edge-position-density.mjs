@@ -6,7 +6,7 @@ for (const expected of [
   "endpointOcclusionEdgePositionAwareDensity",
   "resumedDistanceFromEdge <= 0",
   "? 0.72",
-  ": 0.86",
+  "? 0.86",
   "robustLocalEdgeDensity * 0.75 * endpointOcclusionEdgePositionAwareDensity"
 ]) {
   if (!source.includes(expected)) throw new Error(`missing edge-position-aware density source: ${expected}`);
