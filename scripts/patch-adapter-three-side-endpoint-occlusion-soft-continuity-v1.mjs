@@ -37,4 +37,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-soft-continuity.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-asymmetric-continuity-v1.mjs");
 console.log("three-sided fallback endpoint density now decays softly across weak continuity bins");
