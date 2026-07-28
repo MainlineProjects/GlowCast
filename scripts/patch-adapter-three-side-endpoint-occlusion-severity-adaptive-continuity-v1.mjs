@@ -43,4 +43,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-three-side-endpoint-occlusion-severity-adaptive-continuity.mjs");
+await import("./patch-adapter-three-side-endpoint-occlusion-edge-density-aware-severity-v1.mjs");
 console.log("three-sided fallback endpoint continuity now scales near-gap penalties with support severity");
