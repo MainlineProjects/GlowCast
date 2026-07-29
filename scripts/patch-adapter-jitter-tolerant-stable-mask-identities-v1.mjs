@@ -25,4 +25,5 @@ function canonicalOutlineKey(points: SimplePoint[]): string {`);
 
 await fs.writeFile(path, source);
 await import("./smoke-jitter-tolerant-stable-mask-identities.mjs");
+await import("./patch-adapter-collapse-redundant-stable-outline-points-v1.mjs");
 console.log("stable automatic mask identities now tolerate minor detector jitter");
