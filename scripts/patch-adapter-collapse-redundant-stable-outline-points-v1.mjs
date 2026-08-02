@@ -34,4 +34,5 @@ if (!source.includes(marker)) {
 
 await fs.writeFile(path, source);
 await import("./smoke-collapse-redundant-stable-outline-points.mjs");
+await import("./patch-adapter-collapse-collinear-stable-outline-points-v1.mjs");
 console.log("stable automatic mask identities now ignore redundant outline points");
