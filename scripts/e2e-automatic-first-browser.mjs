@@ -10,7 +10,7 @@ writeFileSync(facade, `<svg xmlns="http://www.w3.org/2000/svg" width="1200" heig
 const textureOnly = `${outDir}/texture-only.svg`;
 writeFileSync(textureOnly, `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800"><rect width="1200" height="800" fill="#a65f43"/>${Array.from({length:18},(_,row)=>Array.from({length:18},(_,col)=>`<rect x="${col*72-(row%2)*36}" y="${row*44}" width="68" height="40" fill="none" stroke="#d9aa91" stroke-width="3"/>`).join("")).join("")}</svg>`);
 
-const server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4173"], { stdio: ["ignore", "pipe", "pipe"] });
+const server = spawn(process.execPath, ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "4173"], { stdio: ["ignore", "pipe", "pipe"] });
 let serverLog = "";
 server.stdout.on("data", chunk => { serverLog += String(chunk); });
 server.stderr.on("data", chunk => { serverLog += String(chunk); });
@@ -90,5 +90,9 @@ try {
   writeFileSync(`${outDir}/summary.json`, `${JSON.stringify({ desktop, mobile }, null, 2)}\n`);
   console.log("Automatic-first browser E2E passed", { desktop, mobile });
 } finally {
-  server.kill("SIGTERM");
+  if (!server.killed) server.kill("SIGTERM");
+  await Promise.race([
+    new Promise(resolve => server.once("exit", resolve)),
+    new Promise(resolve => setTimeout(resolve, 3000))
+  ]);
 }
