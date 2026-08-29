@@ -26,65 +26,60 @@ async function waitForServer() {
   throw new Error(`Vite server did not become ready.\n${serverLog}`);
 }
 
-function semanticResponse() {
-  return {
-    surface: { polygon: [{x:.05,y:.08},{x:.96,y:.08},{x:.96,y:.88},{x:.05,y:.88}] },
-    masks: [
-      { label: "window", confidence: .94, polygon: [{x:.10,y:.20},{x:.38,y:.20},{x:.38,y:.55},{x:.10,y:.55}] },
-      { label: "door", confidence: .93, polygon: [{x:.63,y:.20},{x:.83,y:.20},{x:.83,y:.78},{x:.63,y:.78}] }
-    ],
-    debug: { warnings: [] }
-  };
-}
-
-function textureResponse() {
-  return {
-    surface: { polygon: [{x:.05,y:.08},{x:.96,y:.08},{x:.96,y:.88},{x:.05,y:.88}] },
-    masks: [],
-    debug: { warnings: ["Semantic detector returned zero usable architectural objects; no edge-only masks were invented."] }
-  };
-}
-
-async function openUploadPage(browser, viewport, responseFactory) {
-  const page = await browser.newPage({ viewport });
-  page.setDefaultTimeout(12000);
-  page.setDefaultNavigationTimeout(12000);
-  await page.route("**/api/analyze-projection", async route => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responseFactory()) });
-  });
-  await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 12000 });
-  const upload = page.locator('input[type="file"][accept="image/*"]').first();
-  await upload.waitFor({ state: "attached" });
-  return { page, upload };
-}
+const semanticResponse = {
+  surface: { polygon: [{x:.05,y:.08},{x:.96,y:.08},{x:.96,y:.88},{x:.05,y:.88}] },
+  masks: [
+    { label: "window", confidence: .94, polygon: [{x:.10,y:.20},{x:.38,y:.20},{x:.38,y:.55},{x:.10,y:.55}] },
+    { label: "door", confidence: .93, polygon: [{x:.63,y:.20},{x:.83,y:.20},{x:.83,y:.78},{x:.63,y:.78}] }
+  ],
+  debug: { warnings: [] }
+};
+const textureResponse = {
+  surface: { polygon: [{x:.05,y:.08},{x:.96,y:.08},{x:.96,y:.88},{x:.05,y:.88}] },
+  masks: [],
+  debug: { warnings: ["Semantic detector returned zero usable architectural objects; no edge-only masks were invented."] }
+};
 
 async function exercise(viewport, evidenceName) {
   const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport });
+  page.setDefaultTimeout(12000);
+  page.setDefaultNavigationTimeout(12000);
+  let response = semanticResponse;
+  await page.route("**/api/analyze-projection", async route => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(response) });
+  });
+
   try {
-    const semantic = await openUploadPage(browser, viewport, semanticResponse);
-    await semantic.upload.setInputFiles(facade);
-    const status = semantic.page.getByTestId("automatic-detection-status");
+    await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 12000 });
+    let upload = page.locator('input[type="file"][accept="image/*"]').first();
+    await upload.waitFor({ state: "attached" });
+    await upload.setInputFiles(facade);
+
+    const status = page.getByTestId("automatic-detection-status");
     await status.waitFor({ state: "visible" });
     const statusText = await status.textContent();
     if (!statusText?.includes("2 architectural masks") || !statusText.includes("semantic object proposals + boundary refinement")) {
       throw new Error(`Automatic semantic status was not visible: ${statusText}`);
     }
-    const semanticMaskCount = await semantic.page.locator(".zone").count();
+    const semanticMaskCount = await page.locator(".zone").count();
     if (semanticMaskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${semanticMaskCount}`);
-    await semantic.page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
-    await semantic.page.close();
+    await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
 
-    const texture = await openUploadPage(browser, viewport, textureResponse);
-    await texture.upload.setInputFiles(textureOnly);
-    await texture.page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 12000 });
-    const textureMaskCount = await texture.page.locator(".zone").count();
+    response = textureResponse;
+    await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 12000 });
+    upload = page.locator('input[type="file"][accept="image/*"]').first();
+    await upload.waitFor({ state: "attached" });
+    await upload.setInputFiles(textureOnly);
+    await page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 12000 });
+    const textureMaskCount = await page.locator(".zone").count();
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
-    await texture.page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
-    await texture.page.close();
+    await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
 
     return { evidenceName, semanticMasks: semanticMaskCount, textureMasks: textureMaskCount };
   } finally {
-    await browser.close();
+    await page.close().catch(() => {});
+    await browser.close().catch(() => {});
   }
 }
 
