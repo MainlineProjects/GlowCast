@@ -45,36 +45,45 @@ function textureResponse() {
   };
 }
 
-async function exercise(viewport, evidenceName) {
-  const browser = await chromium.launch({ headless: true });
+async function openUploadPage(browser, viewport, responseFactory) {
   const page = await browser.newPage({ viewport });
-  let mode = "semantic";
   await page.route("**/api/analyze-projection", async route => {
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(mode === "semantic" ? semanticResponse() : textureResponse()) });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(responseFactory()) });
   });
   await page.goto("http://127.0.0.1:4173/", { waitUntil: "networkidle" });
-
   const upload = page.locator('input[type="file"][accept="image/*"]').first();
-  await upload.setInputFiles(facade);
-  const status = page.getByTestId("automatic-detection-status");
-  await status.waitFor({ state: "visible", timeout: 10000 });
-  const statusText = await status.textContent();
-  if (!statusText?.includes("2 architectural masks") || !statusText.includes("semantic object proposals + boundary refinement")) {
-    throw new Error(`Automatic semantic status was not visible: ${statusText}`);
+  await upload.waitFor({ state: "attached", timeout: 10000 });
+  return { page, upload };
+}
+
+async function exercise(viewport, evidenceName) {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const semantic = await openUploadPage(browser, viewport, semanticResponse);
+    await semantic.upload.setInputFiles(facade);
+    const status = semantic.page.getByTestId("automatic-detection-status");
+    await status.waitFor({ state: "visible", timeout: 10000 });
+    const statusText = await status.textContent();
+    if (!statusText?.includes("2 architectural masks") || !statusText.includes("semantic object proposals + boundary refinement")) {
+      throw new Error(`Automatic semantic status was not visible: ${statusText}`);
+    }
+    const semanticMaskCount = await semantic.page.locator(".zone").count();
+    if (semanticMaskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${semanticMaskCount}`);
+    await semantic.page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: true });
+    await semantic.page.close();
+
+    const texture = await openUploadPage(browser, viewport, textureResponse);
+    await texture.upload.setInputFiles(textureOnly);
+    await texture.page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 10000 });
+    const textureMaskCount = await texture.page.locator(".zone").count();
+    if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
+    await texture.page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: true });
+    await texture.page.close();
+
+    return { evidenceName, semanticMasks: semanticMaskCount, textureMasks: textureMaskCount };
+  } finally {
+    await browser.close();
   }
-  const maskCount = await page.locator(".zone").count();
-  if (maskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${maskCount}`);
-  await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: true });
-
-  mode = "texture";
-  await upload.setInputFiles(textureOnly);
-  await page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 10000 });
-  const textureMaskCount = await page.locator(".zone").count();
-  if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
-  await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: true });
-
-  await browser.close();
-  return { evidenceName, semanticMasks: maskCount, textureMasks: textureMaskCount };
 }
 
 try {
