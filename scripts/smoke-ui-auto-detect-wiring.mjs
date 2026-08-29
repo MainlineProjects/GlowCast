@@ -32,7 +32,8 @@ requireText("prepared semantic automatic function", app, "async function runAuto
 requireText("prepared upload automatic call", app, "void runAutomaticSemanticDetection(src)");
 requireText("prepared recent-photo automatic call", app, "void runAutomaticSemanticDetection(photo.imageUrl)");
 requireText("prepared semantic API call", app, "detectSurfaceAndMasks(sourceUrl)");
-requireText("prepared rerun button", app, "Re-run Auto Detect");
+requireText("prepared compatible auto detect button", app, "Auto Detect Masks");
+requireText("prepared semantic button handler", app, "onClick={runLocalAutoMaskDetection}");
 requireText("prepared automatic status", app, 'data-testid="automatic-detection-status"');
 requireText("prepared conservative zero-result copy", app, "did not promote wall texture or edge density into masks");
 rejectText("edge-only candidate promotion in automatic function", app.slice(app.indexOf("async function runAutomaticSemanticDetection"), app.indexOf("function resetForPhoto")), "runCandidateDetection(");
