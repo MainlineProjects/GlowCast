@@ -59,7 +59,7 @@ async function exercise(viewport, evidenceName) {
   const status = page.getByTestId("automatic-detection-status");
   await status.waitFor({ state: "visible", timeout: 10000 });
   const statusText = await status.textContent();
-  if (!statusText?.includes("2 masks") || !statusText.includes("semantic-grounding-dino-sam2")) {
+  if (!statusText?.includes("2 architectural masks") || !statusText.includes("semantic object proposals + boundary refinement")) {
     throw new Error(`Automatic semantic status was not visible: ${statusText}`);
   }
   const maskCount = await page.locator(".zone").count();
