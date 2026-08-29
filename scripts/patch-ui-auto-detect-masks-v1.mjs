@@ -153,22 +153,12 @@ if (s.includes(recentBefore)) {
   changed = true;
 }
 
-const buttonBlock = '\n              <button type="button" className="primary" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Analyzing..." : "Re-run Auto Detect"}\n              </button>';
-if (!s.includes('Re-run Auto Detect')) {
-  const existingAuto = s.indexOf('Auto Detect Masks');
-  if (existingAuto >= 0) {
-    const buttonStart = s.lastIndexOf('<button', existingAuto);
-    const buttonEnd = s.indexOf('\n              </button>', existingAuto);
-    if (buttonStart >= 0 && buttonEnd >= 0) {
-      s = s.slice(0, buttonStart) + buttonBlock.trimStart() + s.slice(buttonEnd + '\n              </button>'.length);
-      changed = true;
-    }
-  } else {
-    const next = insertAfterEdgeScannerButton(s, buttonBlock);
-    if (!next) throw new Error('Could not find edge scanner button anchor.');
-    s = next;
-    changed = true;
-  }
+const buttonBlock = '\n              <button type="button" className="primary" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Analyzing..." : "Auto Detect Masks"}\n              </button>';
+if (!s.includes('onClick={runLocalAutoMaskDetection}')) {
+  const next = insertAfterEdgeScannerButton(s, buttonBlock);
+  if (!next) throw new Error('Could not find edge scanner button anchor.');
+  s = next;
+  changed = true;
 }
 
 const debugBlock = '\n              {detectionDebug && (\n                <p className="helperText" data-testid="automatic-detection-status">\n                  Automatic detection: {detectionDebug.candidateMasks} masks · {detectionDebug.source}{detectionDebug.semanticWarnings ? ` · ${detectionDebug.semanticWarnings} warning${detectionDebug.semanticWarnings === 1 ? "" : "s"}` : ""}\n                </p>\n              )}';
