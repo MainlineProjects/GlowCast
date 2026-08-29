@@ -3,7 +3,7 @@ import fs from "node:fs";
 const path = "src/App.tsx";
 let source = fs.readFileSync(path, "utf8");
 
-const marker = "Auto detection replaces only prior auto-detected masks. Manual masks stay untouched.";
+const marker = "Automatic detection replaces only prior auto-detected masks. Manual cleanup masks stay untouched.";
 if (source.includes(marker)) {
   console.log("Auto-detect safety copy already present.");
 } else {
@@ -15,8 +15,8 @@ if (source.includes(marker)) {
   if (buttonEnd < 0) throw new Error("Auto Detect Masks button end not found.");
 
   const insertAt = buttonEnd + "\n              </button>".length;
-  const helper = `\n              <p className="helperText">\n                Runs locally. ${marker}\n              </p>`;
+  const helper = `\n              <p className="helperText">\n                Uses semantic architectural detection first, then boundary refinement. ${marker}\n              </p>`;
   source = source.slice(0, insertAt) + helper + source.slice(insertAt);
   fs.writeFileSync(path, source);
-  console.log("Added auto-detect safety copy.");
+  console.log("Added semantic auto-detect safety copy.");
 }
