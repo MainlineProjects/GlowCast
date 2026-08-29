@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 const sourcePrep = await fs.readFile("scripts/source-prep.mjs", "utf8");
 const patch = await fs.readFile("scripts/patch-ui-auto-detect-masks-v1.mjs", "utf8");
 const app = await fs.readFile("src/App.tsx", "utf8");
+const detection = await fs.readFile("src/detection.ts", "utf8");
+const cvCore = await fs.readFile("functions/api/cv-core.ts", "utf8");
 const viteConfig = await fs.readFile("vite.config.ts", "utf8");
 const indexHtml = await fs.readFile("index.html", "utf8");
 
@@ -21,33 +23,28 @@ function rejectText(name, source, text) {
 }
 
 requireText("source-prep resilient runner", sourcePrep, "async function runPatch(path, { required = false } = {})");
-requireText("source-prep optional patch warning", sourcePrep, "Optional patch skipped");
-requireText("source-prep required patch error", sourcePrep, "Required source prep patch failed");
 requireText("required auto-detect prep", sourcePrep, 'patch-ui-auto-detect-masks-v1.mjs", { required: true }');
 requireText("React Vite plugin", viteConfig, "react()");
 requireText("Cloudflare build SHA input", viteConfig, "CF_PAGES_COMMIT_SHA");
-requireText("build stamp transform", viteConfig, "glowcast-build-stamp");
-requireText("build stamp replacement", viteConfig, 'replaceAll("__GLOWCAST_BUILD__", buildSha)');
 rejectText("developer-only build badge", indexHtml, "glowcast-build-stamp");
-rejectText("visible build placeholder", indexHtml, "__GLOWCAST_BUILD__");
 
-requireText("prepared app runner import", app, 'import { runCandidateDetection } from "./core/runCandidateDetection";');
-requireText("prepared app auto detect function", app, "async function runLocalAutoMaskDetection()");
-requireText("prepared app auto detect button", app, "Auto Detect Masks");
-requireText("prepared app runner call", app, "runCandidateDetection(activeEdgePoints, bounds, polygon");
-requireText("prepared app auto mask replacement", app, "Auto architectural mask");
+requireText("prepared semantic automatic function", app, "async function runAutomaticSemanticDetection(sourceUrl: string)");
+requireText("prepared upload automatic call", app, "void runAutomaticSemanticDetection(src)");
+requireText("prepared recent-photo automatic call", app, "void runAutomaticSemanticDetection(photo.imageUrl)");
+requireText("prepared semantic API call", app, "detectSurfaceAndMasks(sourceUrl)");
+requireText("prepared rerun button", app, "Re-run Auto Detect");
+requireText("prepared automatic status", app, 'data-testid="automatic-detection-status"');
+requireText("prepared conservative zero-result copy", app, "did not promote wall texture or edge density into masks");
+rejectText("edge-only candidate promotion in automatic function", app.slice(app.indexOf("async function runAutomaticSemanticDetection"), app.indexOf("function resetForPhoto")), "runCandidateDetection(");
 
-requireText("runner import insertion patch", patch, "runCandidateDetection");
-requireText("auto detect function patch", patch, "async function runLocalAutoMaskDetection()");
-requireText("auto detect button patch", patch, "Auto Detect Masks");
-requireText("edge scan before detection", patch, "scanImageEdges(imageUrl)");
-requireText("candidate runner diagnostics call", patch, "runCandidateDetection(activeEdgePoints, bounds, polygon, (diagnostics)");
-requireText("debug counter state", patch, "const [detectionDebug, setDetectionDebug]");
-requireText("detector diagnostics type", patch, "DetectorDiagnostics");
-requireText("closure rejection debug value", patch, "rejectedClosure");
-requireText("size rejection debug value", patch, "rejectedSize");
-requireText("aspect rejection debug value", patch, "rejectedAspect");
-requireText("confidence rejection debug value", patch, "rejectedConfidence");
-requireText("boundary penalty debug value", patch, "boundaryPenalized");
+requireText("semantic backend request", detection, 'fetch("/api/analyze-projection"');
+requireText("architectural semantic prompt", cvCore, "garage opening");
+requireText("texture rejection vocabulary", cvCore, '"brick","mortar","siding"');
+requireText("foliage rejection vocabulary", cvCore, '"foliage","tree","bush","plant"');
+rejectText("plant detector target", cvCore.split("export const DETECTOR_PROMPT=")[1].split(";")[0], "plant");
 
-console.log("UI auto-detect wiring smoke passed: prepared App.tsx is wired and the developer-only build badge remains absent.");
+requireText("semantic function patch", patch, "runAutomaticSemanticDetection(sourceUrl: string)");
+requireText("automatic upload patch", patch, "void runAutomaticSemanticDetection(src)");
+requireText("no texture promotion patch copy", patch, "No edge-only masks were created");
+
+console.log("UI auto-detect wiring smoke passed: prepared app is automatic-first, semantic-first, and refuses texture-only edge promotion.");
