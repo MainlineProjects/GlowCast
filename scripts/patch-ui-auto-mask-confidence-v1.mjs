@@ -33,15 +33,12 @@ if (!source.includes("Auto mask confidence:")) {
   const aspect = zone.width / Math.max(zone.height, 0.01);
   const vertices = zone.points?.length ?? 4;
 
-  // Slender but meaningful doors, sidelights, columns, and transom-like masks should
-  // remain in Review rather than being branded Weak solely because of their aspect.
   if (areaRatio < 0.008 || aspect < 0.07 || aspect > 10 || vertices > 14) return "Weak";
   if (areaRatio >= 0.02 && areaRatio <= 0.3 && aspect >= 0.25 && aspect <= 4.5 && vertices <= 10) return "Strong";
   return "Review";
 }
 
 `;
-
   const appAnchor = /export default function App\s*\(/;
   const appMatch = source.match(appAnchor);
   if (!appMatch || appMatch.index === undefined) {
@@ -53,19 +50,13 @@ if (!source.includes("Auto mask confidence:")) {
   if (!statePattern.test(source)) {
     throw new Error("Unable to locate selected mask state for confidence categories.");
   }
-  source = source.replace(
-    statePattern,
-    `$1\n  const selectedAutoMaskConfidence = getAutoMaskConfidence(selectedZone, projectionArea);`
-  );
+  source = source.replace(statePattern, `$1\n  const selectedAutoMaskConfidence = getAutoMaskConfidence(selectedZone, projectionArea);`);
 
   const statusAnchor = " · Best candidates first";
   if (!source.includes(statusAnchor)) {
     throw new Error("Unable to locate automatic-mask review status for confidence categories.");
   }
-  source = source.replace(
-    statusAnchor,
-    ` · Best candidates first{selectedAutoMaskConfidence && <> · Auto mask confidence: {selectedAutoMaskConfidence}</>}`
-  );
+  source = source.replace(statusAnchor, ` · Best candidates first{selectedAutoMaskConfidence && <> · Auto mask confidence: {selectedAutoMaskConfidence}</>}`);
 }
 
 if (!source.includes("data-selected-auto-mask-class")) {
@@ -114,7 +105,7 @@ if (!source.includes("data-auto-mask-confidence-overlay")) {
   }
 
   const indent = shapeMatch.groups.indent;
-  const overlay = `${indent}{selectedTarget === "zone" && selectedZoneId === zone.id && selectedAutoMaskConfidence ? (\n${indent}  <b\n${indent}    data-auto-mask-confidence-overlay\n${indent}    data-auto-mask-review-state={zone.included ? "accepted" : "pending"}\n${indent}    data-auto-mask-class={getAutoMaskClassLabel(zone) ?? "Architectural feature"}\n${indent}    title={\`${getAutoMaskClassLabel(zone) ?? "Architectural feature"}. GlowCast confidence: \${selectedAutoMaskConfidence}. Review state: \${zone.included ? "Accepted" : "Pending review"}.\`}\n${indent}    style={{\n${indent}      position: "absolute",\n${indent}      top: 8,\n${indent}      right: 8,\n${indent}      zIndex: 12,\n${indent}      display: "inline-flex",\n${indent}      alignItems: "center",\n${indent}      gap: 6,\n${indent}      maxWidth: "calc(100% - 16px)",\n${indent}      padding: "4px 8px",\n${indent}      borderRadius: 999,\n${indent}      background: zone.included ? "rgba(20,83,45,.94)" : "rgba(120,53,15,.94)",\n${indent}      color: "white",\n${indent}      fontSize: 11,\n${indent}      fontWeight: 800,\n${indent}      letterSpacing: ".04em",\n${indent}      lineHeight: 1.2,\n${indent}      whiteSpace: "nowrap",\n${indent}      overflow: "hidden",\n${indent}      textOverflow: "ellipsis",\n${indent}      boxShadow: "0 2px 10px rgba(0,0,0,.45)",\n${indent}      pointerEvents: "none"\n${indent}    }}\n${indent}  >\n${indent}    <span>{getAutoMaskClassLabel(zone) ?? "Architectural feature"}</span>\n${indent}    <span aria-hidden="true">·</span>\n${indent}    <span>{zone.included ? "Accepted" : "Pending review"}</span>\n${indent}    <span aria-hidden="true">·</span>\n${indent}    <span>{selectedAutoMaskConfidence}</span>\n${indent}  </b>\n${indent}) : null}\n\n${shapeMatch[0]}`;
+  const overlay = `${indent}{selectedTarget === "zone" && selectedZoneId === zone.id && selectedAutoMaskConfidence ? (\n${indent}  <b\n${indent}    data-auto-mask-confidence-overlay\n${indent}    data-auto-mask-review-state={zone.included ? "accepted" : "pending"}\n${indent}    data-auto-mask-class={getAutoMaskClassLabel(zone) ?? "Architectural feature"}\n${indent}    title={\`\${getAutoMaskClassLabel(zone) ?? "Architectural feature"}. GlowCast confidence: \${selectedAutoMaskConfidence}. Review state: \${zone.included ? "Accepted" : "Pending review"}.\`}\n${indent}    style={{\n${indent}      position: "absolute",\n${indent}      top: 8,\n${indent}      right: 8,\n${indent}      zIndex: 12,\n${indent}      display: "inline-flex",\n${indent}      alignItems: "center",\n${indent}      gap: 6,\n${indent}      maxWidth: "calc(100% - 16px)",\n${indent}      padding: "4px 8px",\n${indent}      borderRadius: 999,\n${indent}      background: zone.included ? "rgba(20,83,45,.94)" : "rgba(120,53,15,.94)",\n${indent}      color: "white",\n${indent}      fontSize: 11,\n${indent}      fontWeight: 800,\n${indent}      letterSpacing: ".04em",\n${indent}      lineHeight: 1.2,\n${indent}      whiteSpace: "nowrap",\n${indent}      overflow: "hidden",\n${indent}      textOverflow: "ellipsis",\n${indent}      boxShadow: "0 2px 10px rgba(0,0,0,.45)",\n${indent}      pointerEvents: "none"\n${indent}    }}\n${indent}  >\n${indent}    <span>{getAutoMaskClassLabel(zone) ?? "Architectural feature"}</span>\n${indent}    <span aria-hidden="true">·</span>\n${indent}    <span>{zone.included ? "Accepted" : "Pending review"}</span>\n${indent}    <span aria-hidden="true">·</span>\n${indent}    <span>{selectedAutoMaskConfidence}</span>\n${indent}  </b>\n${indent}) : null}\n\n${shapeMatch[0]}`;
 
   source = source.replace(shapeAnchor, overlay);
 } else {
