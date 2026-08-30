@@ -61,7 +61,7 @@ const functionBlock = [
   '        id: Date.now() + index,',
   '        included: true,',
   '        shape: "rectangle" as MaskShape,',
-  '        label: "Auto architectural mask · " + (candidate.label ?? "architectural opening") + " · " + Math.round(Math.max(0, Math.min(1, candidate.confidence ?? 0)) * 100) + "% semantic confidence"',
+  '        label: "Auto architectural mask · " + (candidate.label ?? "architectural opening") + " · " + Math.round(Math.max(0, Math.min(100, candidate.confidence ?? 0))) + "% semantic confidence"',
   '      }));',
   '',
   '      setSurfaceZone(analysis.surface);',
