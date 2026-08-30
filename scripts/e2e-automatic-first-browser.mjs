@@ -63,6 +63,24 @@ async function assertDesktopReviewComposition(page, expectedMasks) {
   }
 }
 
+async function assertAutomaticFirstCleanupHierarchy(page) {
+  const autoButton = page.getByRole("button", { name: /Auto Detect Masks/i });
+  const advanced = page.locator("details.advancedCleanup").first();
+  const summary = advanced.locator("summary");
+  const edgeButton = page.getByRole("button", { name: /Show Edge Scanner/i });
+  const autoBox = await autoButton.boundingBox();
+  const advancedBox = await advanced.boundingBox();
+  if (!autoBox || !advancedBox || autoBox.y >= advancedBox.y) {
+    throw new Error(`Automatic detection must lead collapsed manual cleanup: auto=${JSON.stringify(autoBox)} advanced=${JSON.stringify(advancedBox)}`);
+  }
+  if (await advanced.getAttribute("open") !== null) throw new Error("Advanced manual cleanup must start collapsed");
+  if (await edgeButton.isVisible()) throw new Error("Edge scanner is visible before advanced manual cleanup is opened");
+  await summary.click();
+  if (!(await edgeButton.isVisible())) throw new Error("Edge scanner is unavailable after opening advanced manual cleanup");
+  await summary.click();
+  if (await edgeButton.isVisible()) throw new Error("Advanced manual cleanup did not collapse after verification");
+}
+
 async function captureEditorProof(page, name, expectedMasks) {
   const surface = page.locator(".surfaceLayer").first();
   const photo = surface.locator("img.referencePhoto");
@@ -114,13 +132,7 @@ async function exercise(viewport, evidenceName) {
       throw new Error(`Semantic detections are not identified as automatic masks in review UI: ${maskSummary?.match(/\([^)]*auto enabled[^)]*\)/)?.[0] ?? "status missing"}`);
     }
     if (!maskSummary.includes("Detected Features")) throw new Error("Automatic results panel is still labeled as manual avoid-mask workflow");
-    const autoButton = page.getByRole("button", { name: /Auto Detect Masks/i });
-    const edgeButton = page.getByRole("button", { name: /Show Edge Scanner/i });
-    const autoBox = await autoButton.boundingBox();
-    const edgeBox = await edgeButton.boundingBox();
-    if (!autoBox || !edgeBox || autoBox.y >= edgeBox.y) {
-      throw new Error(`Automatic detection must appear before edge cleanup: auto=${JSON.stringify(autoBox)} edge=${JSON.stringify(edgeBox)}`);
-    }
+    await assertAutomaticFirstCleanupHierarchy(page);
     await assertDesktopReviewComposition(page, 2);
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-semantic`, 2);
@@ -133,6 +145,7 @@ async function exercise(viewport, evidenceName) {
     await page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 12000 });
     const textureMaskCount = await page.locator(".zone").count();
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
+    await assertAutomaticFirstCleanupHierarchy(page);
     await assertDesktopReviewComposition(page, 0);
     await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-texture-rejection`, 0);
