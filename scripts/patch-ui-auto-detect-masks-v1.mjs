@@ -4,16 +4,13 @@ const p = 'src/App.tsx';
 let s = fs.readFileSync(p, 'utf8');
 let changed = false;
 
-function insertAfterEdgeScannerButton(source, insertion) {
+function insertBeforeEdgeScannerButton(source, insertion) {
   const scannerText = 'Show Edge Scanner';
   const textIndex = source.indexOf(scannerText);
   if (textIndex < 0) return null;
   const buttonStart = source.lastIndexOf('<button', textIndex);
   if (buttonStart < 0) return null;
-  const buttonEnd = source.indexOf('\n              </button>', textIndex);
-  if (buttonEnd < 0) return null;
-  const insertAt = buttonEnd + '\n              </button>'.length;
-  return source.slice(0, insertAt) + insertion + source.slice(insertAt);
+  return source.slice(0, buttonStart) + insertion + '\n              ' + source.slice(buttonStart);
 }
 
 function insertDebugHelper(source, insertion) {
@@ -153,11 +150,16 @@ if (s.includes(recentBefore)) {
   changed = true;
 }
 
-const buttonBlock = '\n              <button type="button" className="primary" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Detecting Masks..." : "Auto Detect Masks"}\n              </button>';
+const buttonBlock = '<button type="button" className="primary" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Detecting Masks..." : "Auto Detect Masks"}\n              </button>';
 if (!s.includes('onClick={runLocalAutoMaskDetection}')) {
-  const next = insertAfterEdgeScannerButton(s, buttonBlock);
+  const next = insertBeforeEdgeScannerButton(s, buttonBlock);
   if (!next) throw new Error('Could not find edge scanner button anchor.');
   s = next;
+  changed = true;
+}
+
+if (s.includes('Avoid Masks')) {
+  s = s.replaceAll('Avoid Masks', 'Detected Features');
   changed = true;
 }
 
