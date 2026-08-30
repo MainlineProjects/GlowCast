@@ -40,6 +40,20 @@ const textureResponse = {
   debug: { warnings: ["Semantic detector returned zero usable architectural objects; no edge-only masks were invented."] }
 };
 
+async function captureEditorProof(page, name, expectedMasks) {
+  const stage = page.locator(".stageWrap");
+  const photo = page.locator(".surfaceLayer img.referencePhoto");
+  await stage.waitFor({ state: "visible" });
+  await photo.waitFor({ state: "visible" });
+  const photoBox = await photo.boundingBox();
+  if (!photoBox || photoBox.width < 180 || photoBox.height < 120) {
+    throw new Error(`Reference photo is not visibly reviewable: ${JSON.stringify(photoBox)}`);
+  }
+  const maskCount = await stage.locator(".zone").count();
+  if (maskCount !== expectedMasks) throw new Error(`Focused editor expected ${expectedMasks} masks, found ${maskCount}`);
+  await stage.screenshot({ path: `${outDir}/${name}-editor.png`, timeout: 12000 });
+}
+
 async function exercise(viewport, evidenceName) {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport });
@@ -64,7 +78,12 @@ async function exercise(viewport, evidenceName) {
     }
     const semanticMaskCount = await page.locator(".zone").count();
     if (semanticMaskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${semanticMaskCount}`);
+    const maskSummary = await page.locator("body").textContent();
+    if (!maskSummary?.includes("2 auto on") || !maskSummary.includes("0 manual")) {
+      throw new Error("Semantic detections are not identified as automatic masks in review UI.");
+    }
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
+    await captureEditorProof(page, `${evidenceName}-semantic`, 2);
 
     response = textureResponse;
     await page.goto("http://127.0.0.1:4173/", { waitUntil: "domcontentloaded", timeout: 12000 });
@@ -75,6 +94,7 @@ async function exercise(viewport, evidenceName) {
     const textureMaskCount = await page.locator(".zone").count();
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
     await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
+    await captureEditorProof(page, `${evidenceName}-texture-rejection`, 0);
 
     return { evidenceName, semanticMasks: semanticMaskCount, textureMasks: textureMaskCount };
   } finally {
