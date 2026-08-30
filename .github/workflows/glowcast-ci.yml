@@ -43,6 +43,13 @@ jobs:
       - name: Detector connectivity smoke
         run: node scripts/smoke-detector-connectivity.mjs
 
+      - name: Semantic provider contract smoke
+        shell: bash
+        run: |
+          rm -rf .tmp-semantic-contract
+          npx tsc functions/api/cv-core.ts --target ES2022 --module ES2022 --moduleResolution bundler --lib ES2022,DOM --skipLibCheck --outDir .tmp-semantic-contract
+          node scripts/smoke-semantic-provider-contract.mjs
+
       - name: Synthetic broken-corner frame smoke
         shell: bash
         run: |
