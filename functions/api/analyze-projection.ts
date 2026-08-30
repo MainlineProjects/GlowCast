@@ -1,8 +1,8 @@
-import {DETECTOR_PROMPT,Env,SAM_MODEL,dets,masks,path,rect,run,type Det,type Mask,type Point,type Polygon} from "./cv-core";
+import {DETECTOR_PROMPT,Env,SAM_MODEL,dets,imageSizeFromDataUrl,masks,path,rect,run,type Det,type Mask,type Point,type Polygon} from "./cv-core";
 
 type ProjectionAnalysis={surface:{polygon:Polygon;svgPath:string};masks:Mask[];depth?:{outputUrl?:string};flattenedTemplate:{width:number;height:number;aspectRatio:"16:9"};debug:{detectorProvider:string;geometryProvider:string;segmentationProvider:string;depthProvider:string;warnings:string[]}};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body,null,2),{status,headers:{"Content-Type":"application/json"}});
-const DEFAULT_DETECTOR_MODEL="idea-research/grounding-dino";
+const DEFAULT_DETECTOR_MODEL="adirik/grounding-dino";
 const clamp=(value:number,min=0,max=1)=>Math.min(max,Math.max(min,value));
 function fallbackSurface(){const polygon=rect(.06,.12,.88,.82);return{polygon,svgPath:path(polygon)}}
 function inferredSurface(detections:Det[]){
@@ -19,12 +19,14 @@ function inferredSurface(detections:Det[]){
   return{polygon,svgPath:path(polygon)};
 }
 function configured(value?:string){return Boolean(value&&value!=="pending")}
-function detectorModel(value?:string){return configured(value)&&value!=="adirik/grounding-dino"?value:DEFAULT_DETECTOR_MODEL}
+function detectorModel(value?:string){return configured(value)?value!:DEFAULT_DETECTOR_MODEL}
 async function analyze(imageDataUrl:string,env:Env,refinement?:{positivePoints?:Point[];negativePoints?:Point[];maskInsetOutsetPx?:number}){
   const warnings:string[]=[];
+  const imageSize=imageSizeFromDataUrl(imageDataUrl);
+  if(!imageSize)warnings.push("Could not read uploaded image dimensions; pixel-space detector boxes may be ignored.");
   let detector:any=null,segmentation:any=null,depth:any=null;
-  try{detector=await run({key:env.DETECTOR_API_KEY||env.SAM2_API_KEY,api:env.DETECTOR_API_URL,model:detectorModel(env.DETECTOR_MODEL),version:env.DETECTOR_MODEL_VERSION,input:{image:imageDataUrl,prompt:DETECTOR_PROMPT,text:DETECTOR_PROMPT,caption:DETECTOR_PROMPT,box_threshold:.28,text_threshold:.27},label:"DETECTOR"})}catch(error){warnings.push(error instanceof Error?error.message:"Detector failed.")}
-  const detections=dets(detector);
+  try{detector=await run({key:env.DETECTOR_API_KEY||env.SAM2_API_KEY,api:env.DETECTOR_API_URL,model:detectorModel(env.DETECTOR_MODEL),version:env.DETECTOR_MODEL_VERSION,input:{image:imageDataUrl,query:DETECTOR_PROMPT,box_threshold:.28,text_threshold:.27,show_visualisation:false},label:"DETECTOR"})}catch(error){warnings.push(error instanceof Error?error.message:"Detector failed.")}
+  const detections=dets(detector,imageSize);
   if(detections.length){
     try{segmentation=await run({key:env.SAM2_API_KEY,api:env.SAM2_API_URL,model:env.SAM2_MODEL||SAM_MODEL,version:env.SAM2_MODEL_VERSION,input:{image:imageDataUrl,boxes:detections.map(d=>d.box).filter(b=>b.length===4),box_2d:detections.map(d=>d.box).filter(b=>b.length===4),mask_limit:10,prompt:"segment only the detected architectural opening or column; exclude wall material, shadows, foliage, roof and pavement",points:refinement?.positivePoints??[],negative_points:refinement?.negativePoints??[]},label:"SAM2"})}catch(error){warnings.push(error instanceof Error?error.message:"SAM2 failed.")}
   }else{
