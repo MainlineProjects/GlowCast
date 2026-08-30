@@ -40,6 +40,29 @@ const textureResponse = {
   debug: { warnings: ["Semantic detector returned zero usable architectural objects; no edge-only masks were invented."] }
 };
 
+async function assertDesktopReviewComposition(page, expectedMasks) {
+  const viewport = page.viewportSize();
+  if (!viewport || viewport.width <= 960) return;
+  const stage = page.locator(".stageWrap").first();
+  const photo = page.locator(".surfaceLayer img.referencePhoto").first();
+  const stageBox = await stage.boundingBox();
+  const photoBox = await photo.boundingBox();
+  if (!stageBox || !photoBox) throw new Error("Desktop automatic-review stage or photo is missing");
+  if (stageBox.y < 0 || stageBox.y >= viewport.height - 100 || photoBox.y < 0 || photoBox.y >= viewport.height - 100) {
+    throw new Error(`Automatic review photo is outside the initial desktop viewport: stage=${JSON.stringify(stageBox)} photo=${JSON.stringify(photoBox)} viewport=${JSON.stringify(viewport)}`);
+  }
+  if (photoBox.width < 420 || photoBox.height < 260) {
+    throw new Error(`Automatic review photo is too small for immediate desktop review: ${JSON.stringify(photoBox)}`);
+  }
+  const visibleMaskCount = await page.locator(".surfaceLayer .zone").evaluateAll((nodes, viewportHeight) => nodes.filter((node) => {
+    const rect = node.getBoundingClientRect();
+    return rect.width > 8 && rect.height > 8 && rect.top < viewportHeight && rect.bottom > 0;
+  }).length, viewport.height);
+  if (visibleMaskCount !== expectedMasks) {
+    throw new Error(`Initial desktop viewport expected ${expectedMasks} visible automatic masks, found ${visibleMaskCount}`);
+  }
+}
+
 async function captureEditorProof(page, name, expectedMasks) {
   const surface = page.locator(".surfaceLayer").first();
   const photo = surface.locator("img.referencePhoto");
@@ -98,6 +121,7 @@ async function exercise(viewport, evidenceName) {
     if (!autoBox || !edgeBox || autoBox.y >= edgeBox.y) {
       throw new Error(`Automatic detection must appear before edge cleanup: auto=${JSON.stringify(autoBox)} edge=${JSON.stringify(edgeBox)}`);
     }
+    await assertDesktopReviewComposition(page, 2);
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-semantic`, 2);
 
@@ -109,6 +133,7 @@ async function exercise(viewport, evidenceName) {
     await page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 12000 });
     const textureMaskCount = await page.locator(".zone").count();
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
+    await assertDesktopReviewComposition(page, 0);
     await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-texture-rejection`, 0);
 
