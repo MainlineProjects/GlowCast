@@ -81,6 +81,17 @@ async function assertAutomaticFirstCleanupHierarchy(page) {
   if (await edgeButton.isVisible()) throw new Error("Advanced manual cleanup did not collapse after verification");
 }
 
+async function assertNoPrimaryEdgeDebug(page) {
+  const visibleDebugPanels = await page.locator(".edgeDebugPanel").evaluateAll((nodes) => nodes.filter((node) => {
+    const rect = node.getBoundingClientRect();
+    const style = getComputedStyle(node);
+    return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+  }).length);
+  if (visibleDebugPanels) throw new Error(`Legacy Edge Debug diagnostics are exposed in normal automatic review: ${visibleDebugPanels} panel(s)`);
+  const bodyText = (await page.locator("body").textContent()) ?? "";
+  if (/edge debug/i.test(bodyText)) throw new Error("Legacy Edge Debug copy is exposed in normal automatic review");
+}
+
 async function captureEditorProof(page, name, expectedMasks) {
   const surface = page.locator(".surfaceLayer").first();
   const photo = surface.locator("img.referencePhoto");
@@ -160,6 +171,7 @@ async function exercise(viewport, evidenceName) {
     if (!maskSummary.includes("Detected Features")) throw new Error("Automatic results panel is still labeled as manual avoid-mask workflow");
     await assertSemanticMaskBadges(page);
     await assertAutomaticFirstCleanupHierarchy(page);
+    await assertNoPrimaryEdgeDebug(page);
     await assertDesktopReviewComposition(page, 2);
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-semantic`, 2);
@@ -174,6 +186,7 @@ async function exercise(viewport, evidenceName) {
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
     await assertAutomaticCompletionCopy(page);
     await assertAutomaticFirstCleanupHierarchy(page);
+    await assertNoPrimaryEdgeDebug(page);
     await assertDesktopReviewComposition(page, 0);
     await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-texture-rejection`, 0);
