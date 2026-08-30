@@ -2,15 +2,12 @@
   align-items: start;
 }
 
-.stageWrap {
+.stage {
   align-self: start;
   position: sticky;
   top: 18px;
   max-height: calc(100vh - 36px);
   overflow: auto;
-}
-
-.stage {
   align-items: start;
 }
 
@@ -19,7 +16,7 @@
 }
 
 @media (max-width: 960px) {
-  .stageWrap {
+  .stage {
     position: static;
     top: auto;
     max-height: none;
