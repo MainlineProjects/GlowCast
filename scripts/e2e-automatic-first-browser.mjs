@@ -41,17 +41,25 @@ const textureResponse = {
 };
 
 async function captureEditorProof(page, name, expectedMasks) {
-  const stage = page.locator(".stageWrap");
-  const photo = page.locator(".surfaceLayer img.referencePhoto");
-  await stage.waitFor({ state: "visible" });
+  const surface = page.locator(".surfaceLayer").first();
+  const photo = surface.locator("img.referencePhoto");
+  await surface.scrollIntoViewIfNeeded();
+  await surface.waitFor({ state: "visible" });
   await photo.waitFor({ state: "visible" });
   const photoBox = await photo.boundingBox();
   if (!photoBox || photoBox.width < 180 || photoBox.height < 120) {
     throw new Error(`Reference photo is not visibly reviewable: ${JSON.stringify(photoBox)}`);
   }
-  const maskCount = await stage.locator(".zone").count();
+  const maskCount = await surface.locator(".zone").count();
   if (maskCount !== expectedMasks) throw new Error(`Focused editor expected ${expectedMasks} masks, found ${maskCount}`);
-  await stage.screenshot({ path: `${outDir}/${name}-editor.png`, timeout: 12000 });
+  if (expectedMasks > 0) {
+    const visibleMasks = await surface.locator(".zone").evaluateAll((nodes) => nodes.filter((node) => {
+      const rect = node.getBoundingClientRect();
+      return rect.width > 8 && rect.height > 8;
+    }).length);
+    if (visibleMasks !== expectedMasks) throw new Error(`Expected ${expectedMasks} visibly rendered masks, found ${visibleMasks}`);
+  }
+  await surface.screenshot({ path: `${outDir}/${name}-editor.png`, timeout: 12000 });
 }
 
 async function exercise(viewport, evidenceName) {
