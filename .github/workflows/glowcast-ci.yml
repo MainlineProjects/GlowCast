@@ -31,9 +31,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Clean install dependencies
+      - name: Bootstrap lockfile then clean install dependencies
         run: |
           rm -rf node_modules
+          npm install --package-lock-only --ignore-scripts --progress=false --no-audit --no-fund
           npm ci --progress=false --no-audit --no-fund
 
       - name: Prepare source exactly once
