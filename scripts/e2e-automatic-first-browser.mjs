@@ -103,6 +103,18 @@ async function captureEditorProof(page, name, expectedMasks) {
   await surface.screenshot({ path: `${outDir}/${name}-editor.png`, timeout: 12000 });
 }
 
+async function assertSemanticMaskBadges(page) {
+  const labels = (await page.locator(".surfaceLayer .zone span").allTextContents())
+    .map(text => text.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  if (!labels.some(label => label === "WINDOW 1")) {
+    throw new Error(`Window mask is not visibly identified by semantic feature name: ${JSON.stringify(labels)}`);
+  }
+  if (!labels.some(label => label === "DOOR 2")) {
+    throw new Error(`Door mask is not visibly identified by semantic feature name: ${JSON.stringify(labels)}`);
+  }
+}
+
 async function assertAutomaticCompletionCopy(page) {
   const status = page.getByTestId("automatic-detection-status");
   const statusText = await status.textContent();
@@ -146,6 +158,7 @@ async function exercise(viewport, evidenceName) {
       throw new Error(`Semantic detections are not identified as automatic masks in review UI: ${maskSummary?.match(/\([^)]*auto enabled[^)]*\)/)?.[0] ?? "status missing"}`);
     }
     if (!maskSummary.includes("Detected Features")) throw new Error("Automatic results panel is still labeled as manual avoid-mask workflow");
+    await assertSemanticMaskBadges(page);
     await assertAutomaticFirstCleanupHierarchy(page);
     await assertDesktopReviewComposition(page, 2);
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
