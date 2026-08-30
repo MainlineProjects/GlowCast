@@ -3,8 +3,15 @@ import fs from "node:fs";
 const path = "src/App.tsx";
 let source = fs.readFileSync(path, "utf8");
 
+const withoutLegacyDebug = source.replace(/\s*<div className="edgeDebugPanel">[\s\S]*?<\/div>/g, "");
+const removedLegacyDebug = withoutLegacyDebug !== source;
+source = withoutLegacyDebug;
+
 if (source.includes('className="advancedCleanup"')) {
-  console.log("Advanced manual cleanup is already collapsed.");
+  if (removedLegacyDebug) fs.writeFileSync(path, source);
+  console.log(removedLegacyDebug
+    ? "Advanced manual cleanup already collapsed; removed legacy Edge Debug diagnostics."
+    : "Advanced manual cleanup is already collapsed.");
   process.exit(0);
 }
 
@@ -30,4 +37,6 @@ const wrapped = `<details className="advancedCleanup">\n                <summary
 
 source = source.slice(0, blockStart) + wrapped + source.slice(blockEnd);
 fs.writeFileSync(path, source);
-console.log("Collapsed edge/manual masking controls behind Advanced manual cleanup.");
+console.log(removedLegacyDebug
+  ? "Removed legacy Edge Debug diagnostics and collapsed edge/manual masking controls behind Advanced manual cleanup."
+  : "Collapsed edge/manual masking controls behind Advanced manual cleanup.");
