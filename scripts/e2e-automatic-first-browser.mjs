@@ -43,7 +43,7 @@ const textureResponse = {
 async function assertDesktopReviewComposition(page, expectedMasks) {
   const viewport = page.viewportSize();
   if (!viewport || viewport.width <= 960) return;
-  const stage = page.locator(".stageWrap").first();
+  const stage = page.locator(".stage").first();
   const photo = page.locator(".surfaceLayer img.referencePhoto").first();
   const stageBox = await stage.boundingBox();
   const photoBox = await photo.boundingBox();
