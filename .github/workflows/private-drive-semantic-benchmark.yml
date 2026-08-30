@@ -25,14 +25,20 @@ jobs:
           GLOWCAST_PRODUCTION_ANALYZE_URL: ${{ secrets.GLOWCAST_PRODUCTION_ANALYZE_URL }}
         run: |
           set -euo pipefail
-          test -n "${GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON:-}" || {
-            echo 'BLOCKED_NOT_EXECUTED: missing Actions secret GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON' >&2
+          mkdir -p private-benchmark-evidence
+          missing=()
+          test -n "${GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON:-}" || missing+=(GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON)
+          test -n "${GLOWCAST_PRODUCTION_ANALYZE_URL:-}" || missing+=(GLOWCAST_PRODUCTION_ANALYZE_URL)
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf '{\n  "status": "BLOCKED_NOT_EXECUTED",\n  "actual_benchmark_overlays": 0,\n  "missing_actions_secrets": [' > private-benchmark-evidence/00-BRIDGE-STATUS.json
+            for i in "${!missing[@]}"; do
+              [ "$i" -eq 0 ] || printf ', ' >> private-benchmark-evidence/00-BRIDGE-STATUS.json
+              printf '"%s"' "${missing[$i]}" >> private-benchmark-evidence/00-BRIDGE-STATUS.json
+            done
+            printf ']\n}\n' >> private-benchmark-evidence/00-BRIDGE-STATUS.json
+            echo "BLOCKED_NOT_EXECUTED: missing Actions secrets: ${missing[*]}" >&2
             exit 2
-          }
-          test -n "${GLOWCAST_PRODUCTION_ANALYZE_URL:-}" || {
-            echo 'BLOCKED_NOT_EXECUTED: missing Actions secret GLOWCAST_PRODUCTION_ANALYZE_URL' >&2
-            exit 2
-          }
+          fi
 
       - name: Authenticate Drive read-only service account
         id: drive-auth
