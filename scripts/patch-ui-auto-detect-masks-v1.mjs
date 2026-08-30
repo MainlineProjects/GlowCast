@@ -61,7 +61,7 @@ const functionBlock = [
   '        id: Date.now() + index,',
   '        included: true,',
   '        shape: "rectangle" as MaskShape,',
-  '        label: "Auto architectural mask · " + (candidate.label ?? "architectural opening")',
+  '        label: "Auto architectural mask · " + (candidate.label ?? "architectural opening") + " · " + Math.round(Math.max(0, Math.min(1, candidate.confidence ?? 0)) * 100) + "% semantic confidence"',
   '      }));',
   '',
   '      setSurfaceZone(analysis.surface);',
@@ -176,5 +176,5 @@ if (!changed) {
   console.log('No changes made. Semantic-first auto detect patch is already applied.');
 } else {
   fs.writeFileSync(p, s);
-  console.log('Applied automatic-first semantic detection UI patch.');
+  console.log('Applied automatic-first semantic detection UI patch with detector-confidence labels.');
 }
