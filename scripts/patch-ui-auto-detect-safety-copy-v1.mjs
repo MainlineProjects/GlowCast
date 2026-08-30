@@ -8,8 +8,8 @@ const replacements = [
   ["<h1>GlowCast MVP Prototype</h1>", "<h1>GlowCast</h1>"],
   ['? "Start a projection map."', '? "Upload a photo and let GlowCast find the projection surface and architectural features automatically."'],
   ['? "Mask and edit the surface."', '? "Review automatic windows, doors and features. Draw only the cleanup GlowCast missed."'],
-  [">1 Start<", ">1 Upload & Detect<"],
-  [">2 Mask & Edit<", ">2 Review<"]
+  ["1 Start", "1 Upload & Detect"],
+  ["2 Mask & Edit", "2 Review"]
 ];
 
 for (const [before, after] of replacements) {
