@@ -1,0 +1,32 @@
+.workspace {
+  align-items: start;
+}
+
+.stageWrap {
+  align-self: start;
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+}
+
+.stage {
+  align-items: start;
+}
+
+.stage .surfaceLayer {
+  max-height: calc(100vh - 78px);
+}
+
+@media (max-width: 960px) {
+  .stageWrap {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .stage .surfaceLayer {
+    max-height: none;
+  }
+}
