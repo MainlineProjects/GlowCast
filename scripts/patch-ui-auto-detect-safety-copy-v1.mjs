@@ -7,12 +7,12 @@ const marker = "Automatic detection replaces only prior auto-detected masks. Man
 if (source.includes(marker)) {
   console.log("Auto-detect safety copy already present.");
 } else {
-  const buttonText = 'Detecting Masks...' ;
-  const textIndex = source.indexOf(buttonText);
-  if (textIndex < 0) throw new Error("Auto Detect Masks button text not found.");
+  const actionMarker = 'data-testid="automatic-detect-action"';
+  const actionIndex = source.indexOf(actionMarker);
+  if (actionIndex < 0) throw new Error("Automatic detection action anchor not found.");
 
-  const buttonEnd = source.indexOf("\n              </button>", textIndex);
-  if (buttonEnd < 0) throw new Error("Auto Detect Masks button end not found.");
+  const buttonEnd = source.indexOf("\n              </button>", actionIndex);
+  if (buttonEnd < 0) throw new Error("Automatic detection action end not found.");
 
   const insertAt = buttonEnd + "\n              </button>".length;
   const helper = `\n              <p className="helperText">\n                Uses semantic architectural detection first, then boundary refinement. ${marker}\n              </p>`;
