@@ -90,6 +90,14 @@ async function exercise(viewport, evidenceName) {
     if (!maskSummary?.includes("2 of 2 auto enabled") || !maskSummary.includes("0 manual")) {
       throw new Error(`Semantic detections are not identified as automatic masks in review UI: ${maskSummary?.match(/\([^)]*auto enabled[^)]*\)/)?.[0] ?? "status missing"}`);
     }
+    if (!maskSummary.includes("Detected Features")) throw new Error("Automatic results panel is still labeled as manual avoid-mask workflow");
+    const autoButton = page.getByRole("button", { name: /Auto Detect Masks/i });
+    const edgeButton = page.getByRole("button", { name: /Show Edge Scanner/i });
+    const autoBox = await autoButton.boundingBox();
+    const edgeBox = await edgeButton.boundingBox();
+    if (!autoBox || !edgeBox || autoBox.y >= edgeBox.y) {
+      throw new Error(`Automatic detection must appear before edge cleanup: auto=${JSON.stringify(autoBox)} edge=${JSON.stringify(edgeBox)}`);
+    }
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-semantic`, 2);
 
