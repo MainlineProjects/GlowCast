@@ -79,8 +79,8 @@ async function exercise(viewport, evidenceName) {
     const semanticMaskCount = await page.locator(".zone").count();
     if (semanticMaskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${semanticMaskCount}`);
     const maskSummary = await page.locator("body").textContent();
-    if (!maskSummary?.includes("2 auto on") || !maskSummary.includes("0 manual")) {
-      throw new Error("Semantic detections are not identified as automatic masks in review UI.");
+    if (!maskSummary?.includes("2 of 2 auto enabled") || !maskSummary.includes("0 manual")) {
+      throw new Error(`Semantic detections are not identified as automatic masks in review UI: ${maskSummary?.match(/\([^)]*auto enabled[^)]*\)/)?.[0] ?? "status missing"}`);
     }
     await page.screenshot({ path: `${outDir}/${evidenceName}-semantic.png`, fullPage: false, timeout: 12000 });
     await captureEditorProof(page, `${evidenceName}-semantic`, 2);
