@@ -62,8 +62,6 @@ def semantic_filter(dets,w,h):
  image_area=float(w*h); kept=[]; rejected=[]
  for d in sorted(dets,key=lambda x:x['score'],reverse=True):
   ratio=area(d['box'])/image_area if image_area else 1.0
-  if d['label'].startswith('##'):
-   rejected.append({**d,'reject':'fragmented_label','area_ratio':ratio}); continue
   if d['class']=='windows' and ratio>MAX_WINDOW_AREA:
    rejected.append({**d,'reject':'scene_wide_window','area_ratio':ratio}); continue
   dup=next((k for k in kept if k['class']==d['class'] and iou(k['box'],d['box'])>=NMS_IOU),None)
