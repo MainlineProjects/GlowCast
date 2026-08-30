@@ -150,7 +150,7 @@ if (s.includes(recentBefore)) {
   changed = true;
 }
 
-const buttonBlock = '<button type="button" className="primary" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Detecting Masks..." : "Auto Detect Masks"}\n              </button>';
+const buttonBlock = '<button type="button" className="primary" data-testid="automatic-detect-action" onClick={runLocalAutoMaskDetection} disabled={!imageUrl || detecting || edgeScanning || cornerMode || surfacePolygonMode}>\n                <ScanLine size={18} /> {detecting ? "Analyzing Automatically..." : detectionDebug ? "Re-run Automatic Detection" : "Auto Detect Masks"}\n              </button>';
 if (!s.includes('onClick={runLocalAutoMaskDetection}')) {
   const next = insertBeforeEdgeScannerButton(s, buttonBlock);
   if (!next) throw new Error('Could not find edge scanner button anchor.');
