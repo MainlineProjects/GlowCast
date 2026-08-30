@@ -8,14 +8,14 @@ const countStatus = "({includedZones.length} active / {zones.length} total)";
 if (source.includes(countStatus)) {
   console.log("live mask count status already present");
 } else {
-  const maskHeadingPattern = /<h2>([^<]*Masks[^<]*)<\/h2>/;
+  const maskHeadingPattern = /<h2>([^<]*(?:Masks|Features)[^<]*)<\/h2>/;
   const match = source.match(maskHeadingPattern);
 
   if (!match) {
-    throw new Error("Mask panel heading not found");
+    throw new Error("Detected feature panel heading not found");
   }
 
   source = source.replace(maskHeadingPattern, `<h2>${match[1].trim()} ${countStatus}</h2>`);
   await fs.writeFile(path, source);
-  console.log("added live mask count status");
+  console.log("added live detected-feature count status");
 }
