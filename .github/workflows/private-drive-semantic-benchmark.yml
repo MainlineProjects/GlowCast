@@ -13,34 +13,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Authenticate read-only Drive service account
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Verify required benchmark bridge configuration
+      - name: Verify benchmark bridge secrets are configured
         shell: bash
         env:
+          GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
           GLOWCAST_PRODUCTION_ANALYZE_URL: ${{ secrets.GLOWCAST_PRODUCTION_ANALYZE_URL }}
         run: |
           set -euo pipefail
-          test -n "${GLOWCAST_PRODUCTION_ANALYZE_URL:-}" || {
-            echo 'Missing secret GLOWCAST_PRODUCTION_ANALYZE_URL' >&2
+          test -n "${GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON:-}" || {
+            echo 'BLOCKED_NOT_EXECUTED: missing Actions secret GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON' >&2
             exit 2
           }
-          gcloud auth print-access-token >/dev/null
+          test -n "${GLOWCAST_PRODUCTION_ANALYZE_URL:-}" || {
+            echo 'BLOCKED_NOT_EXECUTED: missing Actions secret GLOWCAST_PRODUCTION_ANALYZE_URL' >&2
+            exit 2
+          }
+
+      - name: Authenticate Drive read-only service account
+        id: drive-auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/drive.readonly
 
       - name: Run all 24 private Drive images through production semantic endpoint
         shell: bash
         env:
+          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.drive-auth.outputs.access_token }}
           GLOWCAST_REFERENCE_FOLDER_ID: 154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6
           GLOWCAST_PRODUCTION_ANALYZE_URL: ${{ secrets.GLOWCAST_PRODUCTION_ANALYZE_URL }}
         run: |
           set -euo pipefail
-          export GOOGLE_OAUTH_ACCESS_TOKEN="$(gcloud auth print-access-token)"
           node scripts/run-private-drive-semantic-benchmark.mjs
 
       - name: Upload bridge evidence
