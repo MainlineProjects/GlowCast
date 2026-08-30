@@ -33,9 +33,11 @@ requireText("prepared semantic automatic function", app, "async function runAuto
 requireText("prepared upload automatic call", app, "void runAutomaticSemanticDetection(src)");
 requireText("prepared recent-photo automatic call", app, "void runAutomaticSemanticDetection(photo.imageUrl)");
 requireText("prepared semantic API call", app, "detectSurfaceAndMasks(sourceUrl)");
-requireText("prepared compatible auto detect button", app, "Auto Detect Masks");
+requireText("prepared automatic detect action test id", app, 'data-testid="automatic-detect-action"');
+requireText("prepared rerun action after automatic completion", app, "Re-run Automatic Detection");
 requireText("prepared semantic button handler", app, "onClick={runLocalAutoMaskDetection}");
 requireText("prepared automatic status", app, 'data-testid="automatic-detection-status"');
+requireText("prepared automatic completion copy", app, "Automatic analysis complete:");
 requireText("prepared conservative zero-result copy", app, "did not promote wall texture or edge density into masks");
 requireText("prepared semantic feature label summary", app, 'replace("Auto architectural mask · ", "")');
 rejectText("edge-only candidate promotion in automatic function", app.slice(app.indexOf("async function runAutomaticSemanticDetection"), app.indexOf("function resetForPhoto")), "runCandidateDetection(");
@@ -48,8 +50,10 @@ rejectText("plant detector target", cvCore.split("export const DETECTOR_PROMPT="
 
 requireText("semantic function patch", patch, "runAutomaticSemanticDetection(sourceUrl: string)");
 requireText("automatic upload patch", patch, "void runAutomaticSemanticDetection(src)");
+requireText("automatic rerun patch copy", patch, "Re-run Automatic Detection");
 requireText("no texture promotion patch copy", patch, "No edge-only masks were created");
 requireText("friendly summary includes semantic labels", friendlySummaryPatch, 'replace("Auto architectural mask · ", "")');
+requireText("friendly summary includes automatic completion", friendlySummaryPatch, "Automatic analysis complete:");
 requireText("friendly summary includes conservative zero label", friendlySummaryPatch, "no confident architectural objects");
 
-console.log("UI auto-detect wiring smoke passed: prepared app is automatic-first, semantic-first, names detected architectural features, and refuses texture-only edge promotion.");
+console.log("UI auto-detect wiring smoke passed: prepared app runs detection automatically, clearly marks completion, offers only a rerun action afterward, names detected architectural features, and refuses texture-only edge promotion.");
