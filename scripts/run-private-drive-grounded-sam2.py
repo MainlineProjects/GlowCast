@@ -3,18 +3,26 @@ import io,json,math,os,time
 from collections import Counter,defaultdict
 from pathlib import Path
 import requests,torch
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.oauth2 import service_account
 from PIL import Image,ImageDraw,ImageFont
 from transformers import AutoModelForZeroShotObjectDetection,AutoProcessor,Sam2Model,Sam2Processor
 
 FOLDER=os.getenv('GLOWCAST_REFERENCE_FOLDER_ID','154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6')
 TOKEN=os.getenv('GOOGLE_OAUTH_ACCESS_TOKEN','')
+if not TOKEN:
+ raw=os.getenv('GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON','')
+ if raw:
+  creds=service_account.Credentials.from_service_account_info(json.loads(raw),scopes=['https://www.googleapis.com/auth/drive.readonly'])
+  creds.refresh(GoogleAuthRequest())
+  TOKEN=creds.token
 OUT=Path(os.getenv('GLOWCAST_BENCHMARK_OUT','private-benchmark-evidence'))
 DINO_ID=os.getenv('GLOWCAST_DINO_MODEL','IDEA-Research/grounding-dino-tiny')
 SAM2_ID=os.getenv('GLOWCAST_SAM2_MODEL','facebook/sam2.1-hiera-tiny')
 BOX=float(os.getenv('GLOWCAST_BOX_THRESHOLD','0.28'))
 TEXT=float(os.getenv('GLOWCAST_TEXT_THRESHOLD','0.27'))
 PROMPTS=['window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
-if not TOKEN: raise SystemExit('GOOGLE_OAUTH_ACCESS_TOKEN is required')
+if not TOKEN: raise SystemExit('Drive authentication is required via GOOGLE_OAUTH_ACCESS_TOKEN or GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON')
 OUT.mkdir(parents=True,exist_ok=True)
 S=requests.Session(); S.headers.update({'Authorization':f'Bearer {TOKEN}'})
 
