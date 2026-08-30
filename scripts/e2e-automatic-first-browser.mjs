@@ -64,7 +64,7 @@ async function assertDesktopReviewComposition(page, expectedMasks) {
 }
 
 async function assertAutomaticFirstCleanupHierarchy(page) {
-  const autoButton = page.getByRole("button", { name: /Auto Detect Masks/i });
+  const autoButton = page.getByTestId("automatic-detect-action");
   const advanced = page.locator("details.advancedCleanup").first();
   const summary = advanced.locator("summary");
   const edgeButton = page.getByRole("button", { name: /Show Edge Scanner/i });
@@ -103,6 +103,19 @@ async function captureEditorProof(page, name, expectedMasks) {
   await surface.screenshot({ path: `${outDir}/${name}-editor.png`, timeout: 12000 });
 }
 
+async function assertAutomaticCompletionCopy(page) {
+  const status = page.getByTestId("automatic-detection-status");
+  const statusText = await status.textContent();
+  if (!statusText?.includes("Automatic analysis complete:")) {
+    throw new Error(`Automatic completion state is unclear: ${statusText}`);
+  }
+  const action = page.getByTestId("automatic-detect-action");
+  const actionText = (await action.textContent())?.replace(/\s+/g, " ").trim();
+  if (!actionText?.includes("Re-run Automatic Detection")) {
+    throw new Error(`Completed automatic analysis still looks like an initial manual action: ${actionText}`);
+  }
+}
+
 async function exercise(viewport, evidenceName) {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport });
@@ -125,6 +138,7 @@ async function exercise(viewport, evidenceName) {
     if (!statusText?.includes("2 architectural masks") || !statusText.includes("semantic object proposals + boundary refinement")) {
       throw new Error(`Automatic semantic status was not visible: ${statusText}`);
     }
+    await assertAutomaticCompletionCopy(page);
     const semanticMaskCount = await page.locator(".zone").count();
     if (semanticMaskCount !== 2) throw new Error(`Expected exactly two rendered semantic masks, found ${semanticMaskCount}`);
     const maskSummary = await page.locator("body").textContent();
@@ -145,6 +159,7 @@ async function exercise(viewport, evidenceName) {
     await page.waitForFunction(() => document.body.textContent?.includes("did not promote wall texture or edge density into masks"), null, { timeout: 12000 });
     const textureMaskCount = await page.locator(".zone").count();
     if (textureMaskCount !== 0) throw new Error(`Texture-only facade created ${textureMaskCount} masks`);
+    await assertAutomaticCompletionCopy(page);
     await assertAutomaticFirstCleanupHierarchy(page);
     await assertDesktopReviewComposition(page, 0);
     await page.screenshot({ path: `${outDir}/${evidenceName}-texture-rejection.png`, fullPage: false, timeout: 12000 });
