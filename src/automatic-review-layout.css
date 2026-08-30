@@ -17,10 +17,15 @@
 
 @media (max-width: 960px) {
   .stage {
+    order: -1;
     position: static;
     top: auto;
     max-height: none;
     overflow: visible;
+  }
+
+  .toolPanel {
+    order: 0;
   }
 
   .stage .surfaceLayer {
