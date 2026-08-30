@@ -1,6 +1,11 @@
 name: Private Drive Semantic Benchmark
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/private-drive-semantic-benchmark.yml'
+      - 'scripts/run-private-drive-semantic-benchmark.mjs'
   workflow_dispatch:
 
 permissions:
