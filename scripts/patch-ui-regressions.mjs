@@ -40,9 +40,15 @@ const oldImg = '          {imageUrl && (\n            <img ref={imageRef} classN
 const newImg = '          {edgeOnlyMode && edgeOverlayUrl ? (\n            <img className="referencePhoto edgeOnlyStage" src={edgeOverlayUrl} alt="Scanned edge layer" draggable={false} />\n          ) : imageUrl ? (\n            <img ref={imageRef} className="referencePhoto" src={imageUrl} alt="Projection surface" draggable={false} />\n          ) : null}';
 app = app.split(oldImg).join(newImg);
 
+// Older prepared source may already contain this legacy diagnostic block from a
+// previous regression patch. Remove it explicitly so normal automatic review is
+// product-facing; edge tooling remains available only inside manual cleanup.
+app = app.replace(/\n\s*<div className="edgeDebugPanel"><strong>Edge Debug<\/strong><span>edge points: \{edgePoints\.length\.toLocaleString\(\)\}<\/span><span>candidates: \{edgeCandidateZones\(\)\.length\}<\/span><span>projection: \{projectionArea \? "ready" : "not set"\}<\/span><\/div>/g, "");
+
 writeFileSync("src/App.tsx", app);
 
 let css = readFileSync("styles.css", "utf8");
+css = css.replace(/\.edgeDebugPanel\{[^}]*\}\.edgeDebugPanel strong\{[^}]*\}/g, "");
 if (!css.includes('.edgeOnlyStage{')) {
   css += '\n.edgeOnlyStage{opacity:1!important;background:#020617!important}@media(max-width:960px){html,body,#root,.glowcastApp{max-width:100vw!important;overflow-x:hidden!important}.startPage{grid-template-columns:1fr!important;width:100%!important;max-width:100vw!important;overflow:hidden!important}.startCard{width:100%!important;max-width:100%!important;min-width:0!important;padding:14px!important;overflow:hidden!important}.recentPhotoRow{max-width:100%!important;overflow-x:auto!important}.recentPhotoButton{flex:0 0 86px!important;min-width:86px!important;max-width:86px!important}.workspace{grid-template-columns:1fr!important}.stage,.surfaceLayer{width:100%!important;max-width:100%!important;overflow:hidden!important}}\n';
 }
