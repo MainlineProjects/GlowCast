@@ -34,7 +34,7 @@ jobs:
       - name: Clean install dependencies
         run: |
           rm -rf node_modules
-          npm install --progress=false --no-audit --no-fund
+          npm ci --progress=false --no-audit --no-fund
 
       - name: Prepare source exactly once
         run: npm run prep && node scripts/patch-fallback-edge-strength-v1.mjs && node scripts/patch-fallback-cluster-length-awareness-v1.mjs && node scripts/patch-fallback-direction-aware-jitter-v1.mjs && node scripts/patch-fallback-strength-coherent-jitter-v1.mjs
