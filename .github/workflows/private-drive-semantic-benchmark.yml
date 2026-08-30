@@ -40,14 +40,6 @@ jobs:
             exit 2
           fi
 
-      - name: Authenticate Drive read-only service account
-        id: drive-auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/drive.readonly
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -65,12 +57,12 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade pip
           python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install 'transformers>=5.5.4,<6' pillow requests timm accelerate
+          python -m pip install 'transformers>=5.5.4,<6' pillow requests timm accelerate google-auth
 
       - name: Run all 24 private Drive images through local Grounding DINO plus SAM2
         shell: bash
         env:
-          GOOGLE_OAUTH_ACCESS_TOKEN: ${{ steps.drive-auth.outputs.access_token }}
+          GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
           GLOWCAST_REFERENCE_FOLDER_ID: 154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6
           GLOWCAST_DINO_MODEL: IDEA-Research/grounding-dino-tiny
           GLOWCAST_SAM2_MODEL: facebook/sam2.1-hiera-tiny
