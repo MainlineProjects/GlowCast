@@ -23,6 +23,7 @@ MIN_GARAGE_SCORE=float(os.getenv('GLOWCAST_MIN_GARAGE_SCORE','0.40'))
 MAX_ARCH_AREA=float(os.getenv('GLOWCAST_MAX_ARCH_AREA','0.08'))
 MIN_COLUMN_WIDTH_HEIGHT=float(os.getenv('GLOWCAST_MIN_COLUMN_WIDTH_HEIGHT','0.10'))
 PROMPTS=['window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
+WINDOW_PROMPTS=['individual window']
 
 def drive_token():
  token=os.getenv('GOOGLE_OAUTH_ACCESS_TOKEN','')
@@ -62,6 +63,10 @@ def iou(a,b):
  ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); inter=ix*iy
  union=area(a)+area(b)-inter
  return inter/union if union else 0.0
+def overlap_over_smaller(a,b):
+ ax1,ay1,ax2,ay2=a; bx1,by1,bx2,by2=b
+ ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); inter=ix*iy; smaller=min(area(a),area(b))
+ return inter/smaller if smaller else 0.0
 def sanitize_label(label):
  return ' '.join(str(label).lower().replace('architectural ','').split())
 def is_cross_alias(a,b):
@@ -73,10 +78,15 @@ def is_cross_alias(a,b):
   normalized=garage['label'].replace('doorfront','front door').replace('openingfront','opening front')
   if 'front door' in normalized or 'storefront door' in normalized:
    return 'garage_doors'
+ if classes=={'windows','doors'} or classes=={'windows','garage_doors'}:
+  window=a if a['class']=='windows' else b
+  if window['label']=='individual window':
+   return 'windows'
  return None
 def semantic_filter(dets,w,h):
  image_area=float(w*h); staged=[]; rejected=[]
- for d in sorted(dets,key=lambda x:x['score'],reverse=True):
+ # Preserve the primary multi-class pass first; focused window-recall candidates may only fill remaining capacity.
+ for d in sorted(dets,key=lambda x:(x['label']=='individual window',-x['score'])):
   ratio=area(d['box'])/image_area if image_area else 1.0
   x1,y1,x2,y2=d['box']; bw=max(0.0,x2-x1); bh=max(0.0,y2-y1); width_height=bw/bh if bh else 0.0
   if d['class']=='windows' and ratio>MAX_WINDOW_AREA:
@@ -89,7 +99,7 @@ def semantic_filter(dets,w,h):
    rejected.append({**d,'reject':'scene_wide_arch','area_ratio':ratio}); continue
   if d['class']=='columns' and width_height<MIN_COLUMN_WIDTH_HEIGHT:
    rejected.append({**d,'reject':'needle_thin_column','area_ratio':ratio,'width_height_ratio':width_height}); continue
-  dup=next((k for k in staged if k['class']==d['class'] and iou(k['box'],d['box'])>=NMS_IOU),None)
+  dup=next((k for k in staged if k['class']==d['class'] and (iou(k['box'],d['box'])>=NMS_IOU or (d['class']=='windows' and overlap_over_smaller(k['box'],d['box'])>=0.85))),None)
   if dup:
    rejected.append({**d,'reject':'duplicate_iou','area_ratio':ratio}); continue
   staged.append({**d,'area_ratio':ratio})
@@ -160,6 +170,12 @@ def main():
   for boxv,sv,lv in zip(p['boxes'],p['scores'],labels):
    label=sanitize_label(lv); key=cls(label)
    if key!='other':raw.append({'label':label,'class':key,'score':float(sv.item()),'box':[float(v) for v in boxv.tolist()]})
+  winp=dp(images=img,text=[WINDOW_PROMPTS],return_tensors='pt').to(dev)
+  with torch.inference_mode():wout=dm(**winp)
+  wp=dp.post_process_grounded_object_detection(wout,threshold=BOX,text_threshold=TEXT,target_sizes=[(img.height,img.width)])[0]; wlabels=wp.get('text_labels',wp.get('labels',[]))
+  for boxv,sv,lv in zip(wp['boxes'],wp['scores'],wlabels):
+   label=sanitize_label(lv)
+   raw.append({'label':label,'class':'windows','score':float(sv.item()),'box':[float(v) for v in boxv.tolist()]})
   dets,rejected=semantic_filter(raw,img.width,img.height); masks=None
   if dets:
    sinp=sp(images=img,input_boxes=[[d['box'] for d in dets]],return_tensors='pt').to(dev)
@@ -169,5 +185,5 @@ def main():
   rec={'index':i,'file':name,'drive_file_id':meta['id'],'tier':int(e.get('tier',0)),'kind':e.get('kind'),'purpose':e.get('purpose'),'expected':e.get('expected'),'dimensions':{'width':img.width,'height':img.height},'legacy_file':e.get('legacy_file'),'legacy_source':e.get('legacy_source'),'occlusion':e.get('occlusion'),'ambiguity':e.get('ambiguity'),'detected_counts':dict(counts),'mask_count':len(dets),'rejected_count':len(rejected),'detections':dets,'rejected_detections':rejected,'score':sc,'elapsed_seconds':round(time.time()-t,3),'overlay':on}; records.append(rec); (OUT/f'{i:02d}-{Path(name).stem}.json').write_text(json.dumps(rec,indent=2))
   st=tiers[rec['tier']]; st['images']+=1; st['masks']+=len(dets); st['rejected']+=len(rejected); st['controlled_expected']+=sc['expected_total']; st['controlled_matched']+=sc['matched_by_count']; st['false_positives']+=sc['false_positive_count']; print(f'[{i:02d}/24] {name}: kept={dict(counts)} rejected={len(rejected)}',flush=True)
  contact(records); expected=sum(r['score']['expected_total'] for r in records); matched=sum(r['score']['matched_by_count'] for r in records); controlled=[r for r in records if str(r.get('kind','')).startswith('controlled')]; hq=[r for r in records if r.get('kind')=='realistic-hq']; controlled_expected=sum(r['score']['expected_total'] for r in controlled); controlled_matched=sum(r['score']['matched_by_count'] for r in controlled); hq_expected=sum(r['score']['expected_total'] for r in hq); hq_matched=sum(r['score']['matched_by_count'] for r in hq); t5=[r for r in records if r['tier']==5]
- card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_name':MANIFEST_NAME,'manifest_version':manifest.get('version'),'hq_realistic_files_audited':sum(1 for e in entries if e.get('kind')=='realistic-hq'),'hq_migration_complete':sum(1 for e in entries if e.get('kind')=='realistic-hq')==14,'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'min_garage_score':MIN_GARAGE_SCORE,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'core_count_recall':matched/expected if expected else None,'controlled_count_recall':controlled_matched/controlled_expected if controlled_expected else None,'controlled_exact_count_passes':sum(1 for r in controlled if r['score']['exact_count_pass']),'controlled_cases':len(controlled),'hq_count_recall':hq_matched/hq_expected if hq_expected else None,'hq_exact_count_passes':sum(1 for r in hq if r['score']['exact_count_pass']),'hq_cases':len(hq),'hq_expected_counts':dict(sum((Counter(r.get('expected') or {}) for r in hq),Counter())),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','All 14 HQ realistic cases now have audited expected counts and still require visual overlay review for mask quality.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
+ card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_name':MANIFEST_NAME,'manifest_version':manifest.get('version'),'hq_realistic_files_audited':sum(1 for e in entries if e.get('kind')=='realistic-hq'),'hq_migration_complete':sum(1 for e in entries if e.get('kind')=='realistic-hq')==14,'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'min_garage_score':MIN_GARAGE_SCORE,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'window_recall_prompt':WINDOW_PROMPTS,'window_recall_capacity_policy':'primary multi-class detections are preserved before focused windows fill the 16-mask budget','execution':'GitHub Actions local open-source inference; no production URL required'},'core_count_recall':matched/expected if expected else None,'controlled_count_recall':controlled_matched/controlled_expected if controlled_expected else None,'controlled_exact_count_passes':sum(1 for r in controlled if r['score']['exact_count_pass']),'controlled_cases':len(controlled),'hq_count_recall':hq_matched/hq_expected if hq_expected else None,'hq_exact_count_passes':sum(1 for r in hq if r['score']['exact_count_pass']),'hq_cases':len(hq),'hq_expected_counts':dict(sum((Counter(r.get('expected') or {}) for r in hq),Counter())),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','All 14 HQ realistic cases now have audited expected counts and still require visual overlay review for mask quality.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
 main()
