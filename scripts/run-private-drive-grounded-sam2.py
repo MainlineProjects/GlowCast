@@ -19,6 +19,7 @@ CROSS_ALIAS_IOU=float(os.getenv('GLOWCAST_CROSS_ALIAS_IOU','0.90'))
 MAX_WINDOW_AREA=float(os.getenv('GLOWCAST_MAX_WINDOW_AREA','0.55'))
 MAX_GARAGE_AREA=float(os.getenv('GLOWCAST_MAX_GARAGE_AREA','0.55'))
 MAX_ARCH_AREA=float(os.getenv('GLOWCAST_MAX_ARCH_AREA','0.08'))
+MIN_COLUMN_WIDTH_HEIGHT=float(os.getenv('GLOWCAST_MIN_COLUMN_WIDTH_HEIGHT','0.10'))
 PROMPTS=['window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
 
 def drive_token():
@@ -75,12 +76,15 @@ def semantic_filter(dets,w,h):
  image_area=float(w*h); staged=[]; rejected=[]
  for d in sorted(dets,key=lambda x:x['score'],reverse=True):
   ratio=area(d['box'])/image_area if image_area else 1.0
+  x1,y1,x2,y2=d['box']; bw=max(0.0,x2-x1); bh=max(0.0,y2-y1); width_height=bw/bh if bh else 0.0
   if d['class']=='windows' and ratio>MAX_WINDOW_AREA:
    rejected.append({**d,'reject':'scene_wide_window','area_ratio':ratio}); continue
   if d['class']=='garage_doors' and ratio>MAX_GARAGE_AREA:
    rejected.append({**d,'reject':'scene_wide_garage','area_ratio':ratio}); continue
   if d['class']=='arches' and ratio>MAX_ARCH_AREA:
    rejected.append({**d,'reject':'scene_wide_arch','area_ratio':ratio}); continue
+  if d['class']=='columns' and width_height<MIN_COLUMN_WIDTH_HEIGHT:
+   rejected.append({**d,'reject':'needle_thin_column','area_ratio':ratio,'width_height_ratio':width_height}); continue
   dup=next((k for k in staged if k['class']==d['class'] and iou(k['box'],d['box'])>=NMS_IOU),None)
   if dup:
    rejected.append({**d,'reject':'duplicate_iou','area_ratio':ratio}); continue
@@ -158,5 +162,5 @@ def main():
   rec={'index':i,'file':name,'drive_file_id':meta['id'],'tier':int(e.get('tier',0)),'kind':e.get('kind'),'purpose':e.get('purpose'),'expected':e.get('expected'),'detected_counts':dict(counts),'mask_count':len(dets),'rejected_count':len(rejected),'detections':dets,'rejected_detections':rejected,'score':sc,'elapsed_seconds':round(time.time()-t,3),'overlay':on}; records.append(rec); (OUT/f'{i:02d}-{Path(name).stem}.json').write_text(json.dumps(rec,indent=2))
   st=tiers[rec['tier']]; st['images']+=1; st['masks']+=len(dets); st['rejected']+=len(rejected); st['controlled_expected']+=sc['expected_total']; st['controlled_matched']+=sc['matched_by_count']; st['false_positives']+=sc['false_positive_count']; print(f'[{i:02d}/24] {name}: kept={dict(counts)} rejected={len(rejected)}',flush=True)
  contact(records); expected=sum(r['score']['expected_total'] for r in records); matched=sum(r['score']['matched_by_count'] for r in records); t5=[r for r in records if r['tier']==5]
- card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_version':manifest.get('version'),'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'execution':'GitHub Actions local open-source inference; no production URL required'},'controlled_count_recall':matched/expected if expected else None,'controlled_exact_count_passes':sum(1 for r in records if r.get('expected') is not None and r['score']['exact_count_pass']),'controlled_cases':sum(1 for r in records if r.get('expected') is not None),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','Realistic-generated cases require visual overlay review until object-level ground truth is added.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
+ card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_version':manifest.get('version'),'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'controlled_count_recall':matched/expected if expected else None,'controlled_exact_count_passes':sum(1 for r in records if r.get('expected') is not None and r['score']['exact_count_pass']),'controlled_cases':sum(1 for r in records if r.get('expected') is not None),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','Realistic-generated cases require visual overlay review until object-level ground truth is added.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
 main()
