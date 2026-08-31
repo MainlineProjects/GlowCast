@@ -72,7 +72,8 @@ def sanitize_label(label):
 def is_cross_alias(a,b):
  classes={a['class'],b['class']}
  if classes=={'arches','windows'}:
-  return 'arches'
+  window=a if a['class']=='windows' else b
+  return None if window['label']=='individual window' else 'arches'
  if classes=={'garage_doors','doors'}:
   garage=a if a['class']=='garage_doors' else b
   normalized=garage['label'].replace('doorfront','front door').replace('openingfront','opening front')
@@ -109,7 +110,9 @@ def semantic_filter(dets,w,h):
   for j in range(i+1,len(staged)):
    if not keep[j]:continue
    b=staged[j]
-   if iou(a['box'],b['box'])<CROSS_ALIAS_IOU:continue
+   classes={a['class'],b['class']}
+   focused_window_alias=classes in ({'windows','doors'},{'windows','garage_doors'}) and (a['label']=='individual window' or b['label']=='individual window')
+   if iou(a['box'],b['box'])<CROSS_ALIAS_IOU and not (focused_window_alias and overlap_over_smaller(a['box'],b['box'])>=0.85):continue
    loser=is_cross_alias(a,b)
    if not loser:continue
    if a['class']==loser:
