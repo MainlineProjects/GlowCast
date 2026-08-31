@@ -22,7 +22,7 @@ MAX_GARAGE_AREA=float(os.getenv('GLOWCAST_MAX_GARAGE_AREA','0.55'))
 MIN_GARAGE_SCORE=float(os.getenv('GLOWCAST_MIN_GARAGE_SCORE','0.40'))
 MAX_ARCH_AREA=float(os.getenv('GLOWCAST_MAX_ARCH_AREA','0.08'))
 MIN_COLUMN_WIDTH_HEIGHT=float(os.getenv('GLOWCAST_MIN_COLUMN_WIDTH_HEIGHT','0.10'))
-PROMPTS=['window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
+PROMPTS=['window','individual window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
 
 def drive_token():
  token=os.getenv('GOOGLE_OAUTH_ACCESS_TOKEN','')
