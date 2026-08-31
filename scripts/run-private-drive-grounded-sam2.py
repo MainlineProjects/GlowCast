@@ -17,9 +17,8 @@ BOX=float(os.getenv('GLOWCAST_BOX_THRESHOLD','0.28'))
 TEXT=float(os.getenv('GLOWCAST_TEXT_THRESHOLD','0.27'))
 NMS_IOU=float(os.getenv('GLOWCAST_NMS_IOU','0.52'))
 CROSS_ALIAS_IOU=float(os.getenv('GLOWCAST_CROSS_ALIAS_IOU','0.90'))
-CROSS_ALIAS_CONTAINMENT=float(os.getenv('GLOWCAST_CROSS_ALIAS_CONTAINMENT','0.80'))
 MAX_WINDOW_AREA=float(os.getenv('GLOWCAST_MAX_WINDOW_AREA','0.55'))
-MAX_GARAGE_AREA=float(os.getenv('GLOWCAST_MAX_GARAGE_AREA','0.50'))
+MAX_GARAGE_AREA=float(os.getenv('GLOWCAST_MAX_GARAGE_AREA','0.55'))
 MAX_ARCH_AREA=float(os.getenv('GLOWCAST_MAX_ARCH_AREA','0.08'))
 MIN_COLUMN_WIDTH_HEIGHT=float(os.getenv('GLOWCAST_MIN_COLUMN_WIDTH_HEIGHT','0.10'))
 PROMPTS=['window','door','garage door','garage opening','storefront window','storefront door','archway','architectural arch','column','glass panel']
@@ -62,23 +61,17 @@ def iou(a,b):
  ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); inter=ix*iy
  union=area(a)+area(b)-inter
  return inter/union if union else 0.0
-def overlap_smaller(a,b):
- ax1,ay1,ax2,ay2=a; bx1,by1,bx2,by2=b
- ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); smaller=min(area(a),area(b))
- return (ix*iy)/smaller if smaller else 0.0
 def sanitize_label(label):
  return ' '.join(str(label).lower().replace('architectural ','').split())
 def is_cross_alias(a,b):
  classes={a['class'],b['class']}
  if classes=={'arches','windows'}:
   return 'arches'
- if 'garage_doors' in classes:
+ if classes=={'garage_doors','doors'}:
   garage=a if a['class']=='garage_doors' else b
-  other=b if garage is a else a
   normalized=garage['label'].replace('doorfront','front door').replace('openingfront','opening front')
-  if other['class']=='doors' and ('front' in normalized or 'store' in normalized):return 'garage_doors'
-  if other['class']=='windows' and 'store' in normalized:return 'garage_doors'
-  if other['class']=='arches' and 'arch' in normalized:return 'garage_doors'
+  if 'front door' in normalized or 'storefront door' in normalized:
+   return 'garage_doors'
  return None
 def semantic_filter(dets,w,h):
  image_area=float(w*h); staged=[]; rejected=[]
@@ -102,10 +95,10 @@ def semantic_filter(dets,w,h):
   if not keep[i]:continue
   for j in range(i+1,len(staged)):
    if not keep[j]:continue
-   b=staged[j]; loser=is_cross_alias(a,b)
+   b=staged[j]
+   if iou(a['box'],b['box'])<CROSS_ALIAS_IOU:continue
+   loser=is_cross_alias(a,b)
    if not loser:continue
-   pair_iou=iou(a['box'],b['box']); containment=overlap_smaller(a['box'],b['box'])
-   if pair_iou<CROSS_ALIAS_IOU and not (loser=='garage_doors' and containment>=CROSS_ALIAS_CONTAINMENT):continue
    if a['class']==loser:
     keep[i]=False; rejected.append({**a,'reject':'cross_class_alias'}); break
    if b['class']==loser:
@@ -173,5 +166,5 @@ def main():
   rec={'index':i,'file':name,'drive_file_id':meta['id'],'tier':int(e.get('tier',0)),'kind':e.get('kind'),'purpose':e.get('purpose'),'expected':e.get('expected'),'dimensions':{'width':img.width,'height':img.height},'legacy_file':e.get('legacy_file'),'legacy_source':e.get('legacy_source'),'occlusion':e.get('occlusion'),'ambiguity':e.get('ambiguity'),'detected_counts':dict(counts),'mask_count':len(dets),'rejected_count':len(rejected),'detections':dets,'rejected_detections':rejected,'score':sc,'elapsed_seconds':round(time.time()-t,3),'overlay':on}; records.append(rec); (OUT/f'{i:02d}-{Path(name).stem}.json').write_text(json.dumps(rec,indent=2))
   st=tiers[rec['tier']]; st['images']+=1; st['masks']+=len(dets); st['rejected']+=len(rejected); st['controlled_expected']+=sc['expected_total']; st['controlled_matched']+=sc['matched_by_count']; st['false_positives']+=sc['false_positive_count']; print(f'[{i:02d}/24] {name}: kept={dict(counts)} rejected={len(rejected)}',flush=True)
  contact(records); expected=sum(r['score']['expected_total'] for r in records); matched=sum(r['score']['matched_by_count'] for r in records); controlled=[r for r in records if str(r.get('kind','')).startswith('controlled')]; hq=[r for r in records if r.get('kind')=='realistic-hq']; controlled_expected=sum(r['score']['expected_total'] for r in controlled); controlled_matched=sum(r['score']['matched_by_count'] for r in controlled); hq_expected=sum(r['score']['expected_total'] for r in hq); hq_matched=sum(r['score']['matched_by_count'] for r in hq); t5=[r for r in records if r['tier']==5]
- card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_name':MANIFEST_NAME,'manifest_version':manifest.get('version'),'hq_realistic_files_audited':sum(1 for e in entries if e.get('kind')=='realistic-hq'),'hq_migration_complete':sum(1 for e in entries if e.get('kind')=='realistic-hq')==14,'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'cross_alias_containment':CROSS_ALIAS_CONTAINMENT,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'core_count_recall':matched/expected if expected else None,'controlled_count_recall':controlled_matched/controlled_expected if controlled_expected else None,'controlled_exact_count_passes':sum(1 for r in controlled if r['score']['exact_count_pass']),'controlled_cases':len(controlled),'hq_count_recall':hq_matched/hq_expected if hq_expected else None,'hq_exact_count_passes':sum(1 for r in hq if r['score']['exact_count_pass']),'hq_cases':len(hq),'hq_expected_counts':dict(sum((Counter(r.get('expected') or {}) for r in hq),Counter())),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','All 14 HQ realistic cases now have audited expected counts and still require visual overlay review for mask quality.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
+ card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_name':MANIFEST_NAME,'manifest_version':manifest.get('version'),'hq_realistic_files_audited':sum(1 for e in entries if e.get('kind')=='realistic-hq'),'hq_migration_complete':sum(1 for e in entries if e.get('kind')=='realistic-hq')==14,'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'core_count_recall':matched/expected if expected else None,'controlled_count_recall':controlled_matched/controlled_expected if controlled_expected else None,'controlled_exact_count_passes':sum(1 for r in controlled if r['score']['exact_count_pass']),'controlled_cases':len(controlled),'hq_count_recall':hq_matched/hq_expected if hq_expected else None,'hq_exact_count_passes':sum(1 for r in hq if r['score']['exact_count_pass']),'hq_cases':len(hq),'hq_expected_counts':dict(sum((Counter(r.get('expected') or {}) for r in hq),Counter())),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','All 14 HQ realistic cases now have audited expected counts and still require visual overlay review for mask quality.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
 main()
