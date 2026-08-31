@@ -64,6 +64,7 @@ jobs:
         env:
           GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
           GLOWCAST_REFERENCE_FOLDER_ID: 154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6
+          GLOWCAST_MANIFEST_NAME: benchmark_manifest_v3_hq.json
           GLOWCAST_DINO_MODEL: IDEA-Research/grounding-dino-tiny
           GLOWCAST_SAM2_MODEL: facebook/sam2.1-hiera-tiny
           GLOWCAST_CROSS_ALIAS_IOU: '0.50'
