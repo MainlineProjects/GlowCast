@@ -63,11 +63,12 @@ def sanitize_label(label):
 def is_cross_alias(a,b):
  classes={a['class'],b['class']}
  if classes=={'arches','windows'}:
-  return 'windows' if a['class']=='windows' else 'arches'
+  return 'arches'
  if classes=={'garage_doors','doors'}:
   garage=a if a['class']=='garage_doors' else b
-  if 'front door' in garage['label'].replace('doorfront','front door').replace('openingfront','opening front') or 'storefront door' in garage['label']:
-   return 'doors' if a['class']=='doors' else 'garage_doors'
+  normalized=garage['label'].replace('doorfront','front door').replace('openingfront','opening front')
+  if 'front door' in normalized or 'storefront door' in normalized:
+   return 'garage_doors'
  return None
 def semantic_filter(dets,w,h):
  image_area=float(w*h); staged=[]; rejected=[]
