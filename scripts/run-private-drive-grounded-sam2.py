@@ -9,6 +9,7 @@ from PIL import Image,ImageDraw,ImageFont
 from transformers import AutoModelForZeroShotObjectDetection,AutoProcessor,Sam2Model,Sam2Processor
 
 FOLDER=os.getenv('GLOWCAST_REFERENCE_FOLDER_ID','154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6')
+MANIFEST_NAME=os.getenv('GLOWCAST_MANIFEST_NAME','benchmark_manifest_v3_hq.json')
 OUT=Path(os.getenv('GLOWCAST_BENCHMARK_OUT','private-benchmark-evidence'))
 DINO_ID=os.getenv('GLOWCAST_DINO_MODEL','IDEA-Research/grounding-dino-tiny')
 SAM2_ID=os.getenv('GLOWCAST_SAM2_MODEL','facebook/sam2.1-hiera-tiny')
@@ -137,17 +138,20 @@ def contact(records):
  sheet.save(OUT/'00-SUMMARY-CONTACT-SHEET.png')
 
 def main():
- start=time.time(); files=children(FOLDER); by={f['name']:f for f in files}; mf=by.get('benchmark_manifest_v2.json')
- if not mf:raise RuntimeError('benchmark_manifest_v2.json missing')
+ start=time.time(); files=children(FOLDER); by={f['name']:f for f in files}; mf=by.get(MANIFEST_NAME)
+ if not mf:raise RuntimeError(f'{MANIFEST_NAME} missing')
  manifest=json.loads(get_bytes(mf['id'])); entries=manifest.get('images',[])
  if len(entries)!=24:raise RuntimeError(f'Expected 24 manifest images, found {len(entries)}')
  dev='cuda' if torch.cuda.is_available() else 'cpu'; print('Loading',DINO_ID,'and',SAM2_ID,'on',dev,flush=True)
  dp=AutoProcessor.from_pretrained(DINO_ID); dm=AutoModelForZeroShotObjectDetection.from_pretrained(DINO_ID).to(dev).eval(); sp=Sam2Processor.from_pretrained(SAM2_ID); sm=Sam2Model.from_pretrained(SAM2_ID).to(dev).eval()
  records=[]; tiers=defaultdict(lambda:{'images':0,'masks':0,'rejected':0,'controlled_expected':0,'controlled_matched':0,'false_positives':0})
  for i,e in enumerate(entries,1):
-  name=e['file']; meta=by.get(name)
+  name=e['file']; explicit_id=e.get('drive_file_id'); meta={'id':explicit_id,'name':name} if explicit_id else by.get(name)
   if not meta:raise RuntimeError(f'Manifest image missing: {name}')
-  img=Image.open(io.BytesIO(get_bytes(meta['id']))).convert('RGB'); t=time.time(); inp=dp(images=img,text=[PROMPTS],return_tensors='pt').to(dev)
+  img=Image.open(io.BytesIO(get_bytes(meta['id']))).convert('RGB')
+  declared=e.get('dimensions')
+  if declared and (img.width!=declared.get('width') or img.height!=declared.get('height')):raise RuntimeError(f"Manifest dimensions mismatch for {name}: declared {declared}, actual {img.width}x{img.height}")
+  t=time.time(); t=time.time(); inp=dp(images=img,text=[PROMPTS],return_tensors='pt').to(dev)
   with torch.inference_mode():out=dm(**inp)
   p=dp.post_process_grounded_object_detection(out,threshold=BOX,text_threshold=TEXT,target_sizes=[(img.height,img.width)])[0]; labels=p.get('text_labels',p.get('labels',[])); raw=[]
   for boxv,sv,lv in zip(p['boxes'],p['scores'],labels):
@@ -159,8 +163,8 @@ def main():
    with torch.inference_mode():sout=sm(**sinp,multimask_output=False)
    masks=sp.post_process_masks(sout.pred_masks.cpu(),sinp['original_sizes'])[0]
   counts=Counter(d['class'] for d in dets); sc=score(e.get('expected'),counts); on=f'{i:02d}-{Path(name).stem}-overlay.png'; overlay(img,dets,masks).save(OUT/on)
-  rec={'index':i,'file':name,'drive_file_id':meta['id'],'tier':int(e.get('tier',0)),'kind':e.get('kind'),'purpose':e.get('purpose'),'expected':e.get('expected'),'detected_counts':dict(counts),'mask_count':len(dets),'rejected_count':len(rejected),'detections':dets,'rejected_detections':rejected,'score':sc,'elapsed_seconds':round(time.time()-t,3),'overlay':on}; records.append(rec); (OUT/f'{i:02d}-{Path(name).stem}.json').write_text(json.dumps(rec,indent=2))
+  rec={'index':i,'file':name,'drive_file_id':meta['id'],'tier':int(e.get('tier',0)),'kind':e.get('kind'),'purpose':e.get('purpose'),'expected':e.get('expected'),'dimensions':{'width':img.width,'height':img.height},'legacy_file':e.get('legacy_file'),'legacy_source':e.get('legacy_source'),'occlusion':e.get('occlusion'),'ambiguity':e.get('ambiguity'),'detected_counts':dict(counts),'mask_count':len(dets),'rejected_count':len(rejected),'detections':dets,'rejected_detections':rejected,'score':sc,'elapsed_seconds':round(time.time()-t,3),'overlay':on}; records.append(rec); (OUT/f'{i:02d}-{Path(name).stem}.json').write_text(json.dumps(rec,indent=2))
   st=tiers[rec['tier']]; st['images']+=1; st['masks']+=len(dets); st['rejected']+=len(rejected); st['controlled_expected']+=sc['expected_total']; st['controlled_matched']+=sc['matched_by_count']; st['false_positives']+=sc['false_positive_count']; print(f'[{i:02d}/24] {name}: kept={dict(counts)} rejected={len(rejected)}',flush=True)
  contact(records); expected=sum(r['score']['expected_total'] for r in records); matched=sum(r['score']['matched_by_count'] for r in records); t5=[r for r in records if r['tier']==5]
- card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_version':manifest.get('version'),'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'controlled_count_recall':matched/expected if expected else None,'controlled_exact_count_passes':sum(1 for r in records if r.get('expected') is not None and r['score']['exact_count_pass']),'controlled_cases':sum(1 for r in records if r.get('expected') is not None),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','Realistic-generated cases require visual overlay review until object-level ground truth is added.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
+ card={'status':'EXECUTED_24_LOCAL_GROUNDED_SAM2','benchmark':manifest.get('benchmark'),'manifest_name':MANIFEST_NAME,'manifest_version':manifest.get('version'),'hq_realistic_files_audited':sum(1 for e in entries if e.get('kind')=='realistic-hq'),'hq_migration_complete':sum(1 for e in entries if e.get('kind')=='realistic-hq')==14,'image_count':len(records),'actual_benchmark_overlays':len(records),'all_24_actual_manifest_images_executed':len(records)==24,'semantic_engine':{'detector':DINO_ID,'segmenter':SAM2_ID,'device':dev,'box_threshold':BOX,'text_threshold':TEXT,'nms_iou':NMS_IOU,'cross_alias_iou':CROSS_ALIAS_IOU,'max_window_area':MAX_WINDOW_AREA,'max_garage_area':MAX_GARAGE_AREA,'max_arch_area':MAX_ARCH_AREA,'min_column_width_height':MIN_COLUMN_WIDTH_HEIGHT,'execution':'GitHub Actions local open-source inference; no production URL required'},'controlled_count_recall':matched/expected if expected else None,'controlled_exact_count_passes':sum(1 for r in records if r.get('expected') is not None and r['score']['exact_count_pass']),'controlled_cases':sum(1 for r in records if r.get('expected') is not None),'tier5_texture_false_positive_masks':sum(r['mask_count'] for r in t5),'tier5_zero_mask_passes':sum(1 for r in t5 if r['mask_count']==0),'tier5_cases':len(t5),'total_rejected_candidates':sum(r['rejected_count'] for r in records),'tiers':{str(k):v for k,v in sorted(tiers.items())},'limitations':['Count recall is computed only for manifest cases with explicit expected counts.','All 14 HQ realistic cases now have audited expected counts and still require visual overlay review for mask quality.'],'elapsed_seconds':round(time.time()-start,3),'results':records}; (OUT/'00-RUN-SCORECARD.json').write_text(json.dumps(card,indent=2)); print(json.dumps({k:v for k,v in card.items() if k!='results'},indent=2))
 main()
