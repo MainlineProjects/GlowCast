@@ -63,6 +63,10 @@ def iou(a,b):
  ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); inter=ix*iy
  union=area(a)+area(b)-inter
  return inter/union if union else 0.0
+def overlap_over_smaller(a,b):
+ ax1,ay1,ax2,ay2=a; bx1,by1,bx2,by2=b
+ ix=max(0,min(ax2,bx2)-max(ax1,bx1)); iy=max(0,min(ay2,by2)-max(ay1,by1)); inter=ix*iy; smaller=min(area(a),area(b))
+ return inter/smaller if smaller else 0.0
 def sanitize_label(label):
  return ' '.join(str(label).lower().replace('architectural ','').split())
 def is_cross_alias(a,b):
@@ -74,6 +78,10 @@ def is_cross_alias(a,b):
   normalized=garage['label'].replace('doorfront','front door').replace('openingfront','opening front')
   if 'front door' in normalized or 'storefront door' in normalized:
    return 'garage_doors'
+ if classes=={'windows','doors'} or classes=={'windows','garage_doors'}:
+  window=a if a['class']=='windows' else b
+  if window['label']=='individual window':
+   return 'windows'
  return None
 def semantic_filter(dets,w,h):
  image_area=float(w*h); staged=[]; rejected=[]
@@ -90,7 +98,7 @@ def semantic_filter(dets,w,h):
    rejected.append({**d,'reject':'scene_wide_arch','area_ratio':ratio}); continue
   if d['class']=='columns' and width_height<MIN_COLUMN_WIDTH_HEIGHT:
    rejected.append({**d,'reject':'needle_thin_column','area_ratio':ratio,'width_height_ratio':width_height}); continue
-  dup=next((k for k in staged if k['class']==d['class'] and iou(k['box'],d['box'])>=NMS_IOU),None)
+  dup=next((k for k in staged if k['class']==d['class'] and (iou(k['box'],d['box'])>=NMS_IOU or (d['class']=='windows' and overlap_over_smaller(k['box'],d['box'])>=0.85))),None)
   if dup:
    rejected.append({**d,'reject':'duplicate_iou','area_ratio':ratio}); continue
   staged.append({**d,'area_ratio':ratio})
