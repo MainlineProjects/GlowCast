@@ -81,7 +81,10 @@ def is_cross_alias(a,b):
    return 'garage_doors'
  if classes=={'windows','doors'} or classes=={'windows','garage_doors'}:
   window=a if a['class']=='windows' else b
-  if window['label']=='individual window':
+  # A highly contained glass/window proposal inside a door is door glazing,
+  # not a separately useful architectural mask. Keep the garage case limited
+  # to the focused pass because broad garage aliases can contain real windows.
+  if classes=={'windows','doors'} or window['label']=='individual window':
    return 'windows'
  return None
 def semantic_filter(dets,w,h):
@@ -112,7 +115,8 @@ def semantic_filter(dets,w,h):
    b=staged[j]
    classes={a['class'],b['class']}
    focused_window_alias=classes in ({'windows','doors'},{'windows','garage_doors'}) and (a['label']=='individual window' or b['label']=='individual window')
-   if iou(a['box'],b['box'])<CROSS_ALIAS_IOU and not (focused_window_alias and overlap_over_smaller(a['box'],b['box'])>=0.85):continue
+   contained_door_glazing=classes=={'windows','doors'} and overlap_over_smaller(a['box'],b['box'])>=0.85
+   if iou(a['box'],b['box'])<CROSS_ALIAS_IOU and not contained_door_glazing and not (focused_window_alias and overlap_over_smaller(a['box'],b['box'])>=0.85):continue
    loser=is_cross_alias(a,b)
    if not loser:continue
    if a['class']==loser:
