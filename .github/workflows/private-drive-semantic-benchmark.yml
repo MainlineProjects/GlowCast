@@ -67,6 +67,7 @@ jobs:
           GLOWCAST_DINO_MODEL: IDEA-Research/grounding-dino-tiny
           GLOWCAST_SAM2_MODEL: facebook/sam2.1-hiera-tiny
           GLOWCAST_MAX_WINDOW_AREA: '0.40'
+          GLOWCAST_MAX_ARCH_AREA: '0.08'
         run: |
           set -euo pipefail
           python scripts/run-private-drive-grounded-sam2.py
@@ -74,81 +75,20 @@ jobs:
           test -f private-benchmark-evidence/00-RUN-SCORECARD.json
           test "$(find private-benchmark-evidence -maxdepth 1 -name '*-overlay.png' | wc -l)" -eq 24
 
-      - name: Publish all visual evidence to Drive and prune results older than 24 hours
+      - name: Validate complete evidence set for Drive publisher
         shell: bash
-        env:
-          GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
-          GLOWCAST_RESULTS_FOLDER_ID: 1ZkA98n7hzKqMbmITXtkPAUhVyQfU5tvJ
-          GLOWCAST_RUN_ID: ${{ github.run_id }}
-          GLOWCAST_HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import datetime, json, mimetypes, os
-          from pathlib import Path
-          import requests
-          from google.auth.transport.requests import Request
-          from google.oauth2 import service_account
-
-          raw = os.environ['GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON']
-          parent = os.environ['GLOWCAST_RESULTS_FOLDER_ID']
-          run_id = os.environ['GLOWCAST_RUN_ID']
-          sha = os.environ['GLOWCAST_HEAD_SHA'][:7]
-          creds = service_account.Credentials.from_service_account_info(
-              json.loads(raw), scopes=['https://www.googleapis.com/auth/drive']
-          )
-          creds.refresh(Request())
-          session = requests.Session()
-          session.headers['Authorization'] = f'Bearer {creds.token}'
-
-          def api(method, url, **kwargs):
-              r = session.request(method, url, timeout=120, **kwargs)
-              r.raise_for_status()
-              return r
-
-          cutoff = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)).isoformat().replace('+00:00', 'Z')
-          q = f"'{parent}' in parents and trashed = false and modifiedTime < '{cutoff}'"
-          params = {'q': q, 'pageSize': 1000, 'fields': 'files(id,name,mimeType,modifiedTime)'}
-          stale = api('GET', 'https://www.googleapis.com/drive/v3/files', params=params).json().get('files', [])
-          deleted = 0
-          for item in stale:
-              api('DELETE', f"https://www.googleapis.com/drive/v3/files/{item['id']}")
-              deleted += 1
-
-          now = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d_%H-%M')
-          folder_meta = {'name': f'{now}_run-{run_id}_{sha}', 'mimeType': 'application/vnd.google-apps.folder', 'parents': [parent]}
-          run_folder = api('POST', 'https://www.googleapis.com/drive/v3/files', params={'fields': 'id,name'}, json=folder_meta).json()
-          run_folder_id = run_folder['id']
-
-          evidence = Path('private-benchmark-evidence')
-          overlays = sorted(evidence.glob('*-overlay.png'))
-          required = overlays + [evidence / '00-SUMMARY-CONTACT-SHEET.png', evidence / '00-RUN-SCORECARD.json']
-          if len(overlays) != 24 or any(not p.exists() for p in required):
-              raise RuntimeError(f'Expected 24 overlays plus contact sheet and scorecard, got overlays={len(overlays)}')
-
-          uploaded = 0
-          for path in required:
-              mime = mimetypes.guess_type(path.name)[0] or 'application/octet-stream'
-              meta = {'name': path.name, 'parents': [run_folder_id]}
-              created = api('POST', 'https://www.googleapis.com/drive/v3/files', params={'fields': 'id'}, json=meta).json()
-              with path.open('rb') as fh:
-                  api('PATCH', f"https://www.googleapis.com/upload/drive/v3/files/{created['id']}", params={'uploadType': 'media'}, data=fh, headers={'Content-Type': mime})
-              uploaded += 1
-
-          children_q = f"'{run_folder_id}' in parents and trashed = false"
-          children = api('GET', 'https://www.googleapis.com/drive/v3/files', params={'q': children_q, 'pageSize': 1000, 'fields': 'files(id,name,mimeType)'}).json().get('files', [])
-          names = {x['name'] for x in children}
-          expected_names = {p.name for p in required}
-          if len(children) != 26 or names != expected_names:
-              raise RuntimeError(f'Drive evidence verification failed: expected 26 exact files, found {len(children)}')
-          print(json.dumps({'drive_run_folder_id': run_folder_id, 'published_files': uploaded, 'deleted_older_than_24h': deleted}, indent=2))
-          PY
+          test "$(find private-benchmark-evidence -maxdepth 1 -name '*-overlay.png' | wc -l)" -eq 24
+          test -f private-benchmark-evidence/00-SUMMARY-CONTACT-SHEET.png
+          test -f private-benchmark-evidence/00-RUN-SCORECARD.json
+          echo "Validated 24 overlays plus contact sheet and scorecard. The hourly release owner publishes these artifact bytes into the user-owned Drive results folder."
 
       - name: Upload full benchmark evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: private-drive-grounded-sam2-${{ github.sha }}
+          name: private-drive-grounded-sam2-${{ github.event.pull_request.head.sha || github.sha }}
           path: private-benchmark-evidence/
           if-no-files-found: warn
           retention-days: 3
