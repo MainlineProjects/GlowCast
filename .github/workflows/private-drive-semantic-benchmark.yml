@@ -70,6 +70,7 @@ jobs:
           GLOWCAST_CROSS_ALIAS_IOU: '0.50'
           GLOWCAST_MAX_WINDOW_AREA: '0.40'
           GLOWCAST_MAX_ARCH_AREA: '0.08'
+          GLOWCAST_MAX_ARCH_WIDTH_HEIGHT: '1.50'
           GLOWCAST_MAX_COLUMN_AREA: '0.03'
         run: |
           set -euo pipefail
