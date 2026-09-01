@@ -1,0 +1,98 @@
+name: Private Drive Semantic Benchmark
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/private-drive-semantic-benchmark.yml'
+      - 'scripts/run-private-drive-grounded-sam2.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify private Drive authorization is configured
+        shell: bash
+        env:
+          GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          mkdir -p private-benchmark-evidence
+          if [ -z "${GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            cat > private-benchmark-evidence/00-BRIDGE-STATUS.json <<'JSON'
+          {
+            "status": "BLOCKED_NOT_EXECUTED",
+            "actual_benchmark_overlays": 0,
+            "missing_actions_secrets": ["GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON"],
+            "production_url_required": false,
+            "semantic_provider_secret_required": false,
+            "next_action": "Authorize this workflow read-only access to the private Reference Images folder."
+          }
+          JSON
+            echo "BLOCKED_NOT_EXECUTED: missing GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON" >&2
+            exit 2
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache Hugging Face model weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: glowcast-grounded-sam2-v1-${{ runner.os }}
+
+      - name: Install CPU inference runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install 'transformers>=5.5.4,<6' pillow requests timm accelerate google-auth
+
+      - name: Run all 24 private Drive images through local Grounding DINO plus SAM2
+        shell: bash
+        env:
+          GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GLOWCAST_GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GLOWCAST_REFERENCE_FOLDER_ID: 154_ygM9h5WUEI_HfRPW6FqkCM5ILh5Z6
+          GLOWCAST_MANIFEST_NAME: benchmark_manifest_v3_hq.json
+          GLOWCAST_DINO_MODEL: IDEA-Research/grounding-dino-tiny
+          GLOWCAST_SAM2_MODEL: facebook/sam2.1-hiera-tiny
+          GLOWCAST_CROSS_ALIAS_IOU: '0.50'
+          GLOWCAST_MAX_WINDOW_AREA: '0.40'
+          GLOWCAST_MAX_ARCH_AREA: '0.08'
+          GLOWCAST_MAX_ARCH_WIDTH_HEIGHT: '1.50'
+          GLOWCAST_MAX_COLUMN_AREA: '0.03'
+        run: |
+          set -euo pipefail
+          python scripts/run-private-drive-grounded-sam2.py
+          test -f private-benchmark-evidence/00-SUMMARY-CONTACT-SHEET.png
+          test -f private-benchmark-evidence/00-RUN-SCORECARD.json
+          test "$(find private-benchmark-evidence -maxdepth 1 -name '*-overlay.png' | wc -l)" -eq 24
+
+      - name: Validate complete evidence set for Drive publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find private-benchmark-evidence -maxdepth 1 -name '*-overlay.png' | wc -l)" -eq 24
+          test -f private-benchmark-evidence/00-SUMMARY-CONTACT-SHEET.png
+          test -f private-benchmark-evidence/00-RUN-SCORECARD.json
+          echo "Validated 24 overlays plus contact sheet and scorecard. The hourly release owner publishes these artifact bytes into the user-owned Drive results folder."
+
+      - name: Upload full benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-drive-grounded-sam2-${{ github.event.pull_request.head.sha || github.sha }}
+          path: private-benchmark-evidence/
+          if-no-files-found: warn
+          retention-days: 3

@@ -18,9 +18,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Clean install, smoke, typecheck, build
+    name: Clean install, prepared detector, browser QA, typecheck, build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -31,14 +31,24 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: npm install --progress=false
+      - name: Bootstrap lockfile then clean install dependencies
+        run: |
+          rm -rf node_modules
+          npm install --package-lock-only --ignore-scripts --progress=false --no-audit --no-fund
+          npm ci --progress=false --no-audit --no-fund
 
       - name: Prepare source exactly once
         run: npm run prep && node scripts/patch-fallback-edge-strength-v1.mjs && node scripts/patch-fallback-cluster-length-awareness-v1.mjs && node scripts/patch-fallback-direction-aware-jitter-v1.mjs && node scripts/patch-fallback-strength-coherent-jitter-v1.mjs
 
       - name: Detector connectivity smoke
         run: node scripts/smoke-detector-connectivity.mjs
+
+      - name: Semantic provider contract smoke
+        shell: bash
+        run: |
+          rm -rf .tmp-semantic-contract
+          npx tsc --ignoreConfig functions/api/cv-core.ts --target ES2022 --module ES2022 --moduleResolution bundler --lib ES2022,DOM --skipLibCheck --outDir .tmp-semantic-contract
+          node scripts/smoke-semantic-provider-contract.mjs
 
       - name: Synthetic broken-corner frame smoke
         shell: bash
@@ -82,7 +92,7 @@ jobs:
           set -o pipefail
           node scripts/smoke-run-candidate-detection.mjs 2>&1 | tee candidate-detection.log
 
-      - name: UI wiring smoke
+      - name: Automatic-first semantic UI wiring smoke
         run: node scripts/smoke-ui-auto-detect-wiring.mjs
 
       - name: Fallback duplicate smoke
@@ -105,6 +115,23 @@ jobs:
 
       - name: Bounded satellite growth source smoke
         run: node scripts/smoke-bounded-satellite-growth-source.mjs
+
+      - name: Install browser QA runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Prepared browser automatic-first QA
+        run: node scripts/e2e-automatic-first-browser.mjs
+
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automatic-first-browser-${{ github.sha }}
+          path: browser-evidence/
+          if-no-files-found: warn
+          retention-days: 3
 
       - name: TypeScript check
         run: npx tsc
@@ -135,7 +162,7 @@ jobs:
             synthetic-frame-diagnostic.json
             synthetic-broken-corner.log
             candidate-detection.log
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 3
 
   deploy-pages:

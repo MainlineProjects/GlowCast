@@ -60,3 +60,4 @@ if (!source.includes('className="pendingUndoMaskPreview"')) {
 
 await fs.writeFile(path, source);
 console.log("Applied multi-step automatic-mask review history with visible action label, count, and canvas preview.");
+await import("./patch-ui-collapse-manual-cleanup-v1.mjs");
